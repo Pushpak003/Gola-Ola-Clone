@@ -138,4 +138,58 @@ export const acceptRideService = async ({ rideId, captainId }) => {
 
   return updatedRide;
 };
+export const startRideService =
+async ({
+  rideId,
+  captainId,
+  otp,
+}) => {
+
+  const ride =
+    await prisma.ride.findUnique({
+      where: {
+        id: rideId,
+      },
+    });
+
+  if (!ride) {
+    throw new Error(
+      "Ride not found"
+    );
+  }
+
+  if (
+    ride.captainId !== captainId
+  ) {
+    throw new Error(
+      "Unauthorized"
+    );
+  }
+
+  if (
+    ride.status !== "ACCEPTED"
+  ) {
+    throw new Error(
+      "Ride cannot be started"
+    );
+  }
+
+  if (ride.otp !== otp) {
+    throw new Error(
+      "Invalid OTP"
+    );
+  }
+
+  const updatedRide =
+    await prisma.ride.update({
+      where: {
+        id: rideId,
+      },
+      data: {
+        status: "STARTED",
+      },
+    });
+
+  return updatedRide;
+};
 
