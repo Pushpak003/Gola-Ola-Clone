@@ -1,13 +1,9 @@
 import prisma from "../config/db.js";
-
 import { generateOTP } from "../utils/generateOTP.js";
 
-export const sendOTPService = async (
-  phone
-) => {
+export const sendOTPService = async (phone) => {
 
   const otp = generateOTP();
-
   const expiresAt = new Date(
     Date.now() + 5 * 60 * 1000
   );
@@ -25,16 +21,13 @@ export const sendOTPService = async (
   return otp;
 };
 
-export const verifyOTPService = async (
-  phone,
-  otp
-) => {
+export const verifyOTPService = async ( phone,otp) => {
 
   const otpRecord =
     await prisma.oTP.findFirst({
       where: {
         phone,
-        code: otp,
+        code: String(otp),
       },
 
       orderBy: {

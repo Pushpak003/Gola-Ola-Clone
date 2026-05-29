@@ -1,7 +1,11 @@
 import { getDistanceService } from "./map.service.js";
 import { calculateFare } from "../utils/calculateFare.js";
 import { generateRideOTP } from "../utils/generateRideOTP.js";
+import { getNearbyDrivers } from "../utils/getNearbyDrivers.js";
+import {onlineUsers} from "../sockets/onlineUsers.js";
+import { getIo } from "../sockets/socket.js";
 import prisma from "../config/db.js";
+
 export const getFareService = async (
   pickupLng,
   pickupLat,
@@ -19,14 +23,12 @@ export const getFareService = async (
 
   return {
     distance: routeData.distance,
-
     duration: routeData.duration,
-
     fares,
   };
 };
-export const createRideService =
-async ({
+
+export const createRideService = async ({
   userId,
 
   pickup,
@@ -40,66 +42,100 @@ async ({
 
   vehicleType,
 }) => {
+  const routeData = await getDistanceService(
+    pickupLng,
+    pickupLat,
+    destinationLng,
+    destinationLat,
+  );
 
-  const routeData =
-    await getDistanceService(
-      pickupLng,
-      pickupLat,
-      destinationLng,
-      destinationLat
-    );
+  const fares = calculateFare(routeData.distance);
 
-  const fares =
-    calculateFare(
-      routeData.distance
-    );
-
-  const fare =
-    fares[vehicleType];
+  const fare = fares[vehicleType];
 
   if (!fare) {
-    throw new Error(
-      "Invalid vehicle type"
-    );
+    throw new Error("Invalid vehicle type");
   }
 
-  const otp =
-    generateRideOTP();
+  const otp = generateRideOTP();
 
-  const ride =
-    await prisma.ride.create({
-      data: {
+  const ride = await prisma.ride.create({
+    data: {
+      userId,
 
-        userId,
+      pickup,
+      destination,
 
-        pickup,
-        destination,
+      pickupLat,
+      pickupLng,
 
-        pickupLat,
-        pickupLng,
+      destinationLat,
+      destinationLng,
 
-        destinationLat,
-        destinationLng,
+      distance: routeData.distance,
+      duration: Math.ceil(routeData.duration),
+      fare,
+      vehicleType,
+      otp,
+      status: "SEARCHING",
+    },
+  });
+  const nearbyDrivers = getNearbyDrivers({
+    lat: pickupLat,
+    lng: pickupLng,
+    vehicleType,
+  });
 
-        distance:
-          routeData.distance,
+  const io = getIo();
 
-        duration:
-          Math.ceil(
-            routeData.duration
-          ),
-
-        fare,
-
-        vehicleType,
-
-        otp,
-
-        status:
-          "SEARCHING",
-      },
-    });
-
+  for (const driver of nearbyDrivers) {
+    io.to(driver.socketId).emit("new-ride", ride);
+  }
   return ride;
-
 };
+export const acceptRideService = async ({ rideId, captainId }) => {
+  const ride = await prisma.ride.findUnique({
+    where: {
+      id: rideId,
+    },
+  });
+
+  if (!ride) {
+    throw new Error("Ride not found");
+  }
+
+  if (ride.status !== "SEARCHING") {
+    throw new Error("Ride already accepted");
+  }
+
+  const updatedRide = await prisma.ride.update({
+    where: {
+      id: rideId,
+    },
+
+    data: {
+      captainId,
+      status: "ACCEPTED",
+    },
+  });
+    const userSocketId =
+    onlineUsers.get(
+      ride.userId
+    );
+
+  if (userSocketId) {
+
+    const io = getIo();
+
+    io.to(
+      userSocketId
+    ).emit(
+      "ride-confirmed",
+      updatedRide
+    );
+
+  }
+
+  return updatedRide;
+};
+
