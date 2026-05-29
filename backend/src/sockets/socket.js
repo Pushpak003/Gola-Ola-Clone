@@ -14,7 +14,7 @@ export const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
- 
+
     // CAPTAIN ONLINE
     socket.on("captain-online", async (data) => {
       try {
@@ -61,14 +61,48 @@ export const initSocket = (server) => {
         onlineUsers.set(user.id, socket.id);
 
         console.log("Online Users:");
-
         console.log(onlineUsers);
       } catch (error) {
         console.log(error);
       }
     });
+    socket.on("captain-location", async (data) => {
+      console.log("LOCATION RECEIVED", data);
+
+      try {
+        const { rideId, lat, lng } = data;
+
+        const ride = await prisma.ride.findUnique({
+          where: {
+            id: rideId,
+          },
+        });
+
+        if (!ride) {
+          return;
+        }
+
+        const userSocketId = onlineUsers.get(ride.userId);
+        console.log({
+          rideUserId: ride.userId,
+          userSocketId,
+        });
+
+        if (!userSocketId) {
+          return;
+        }
+
+        io.to(userSocketId).emit("captain-location-update", {
+          rideId,
+          lat,
+          lng,
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    });
     // DISCONNECT
-    
+
     socket.on("disconnect", () => {
       // driver cleanup
       for (const [captainId, driverData] of onlineDrivers) {

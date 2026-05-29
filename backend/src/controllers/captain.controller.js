@@ -1,8 +1,10 @@
 import {
   sendCaptainOTPService,
-  verifyCaptainOTPService,
+  verifyCaptainOTPService
 } from "../services/captain.service.js";
 import { generateToken } from "../utils/generateToken.js";
+import { getCaptainCurrentRideService } from "../services/ride.service.js";
+
 import prisma from "../config/db.js";
 
 export const sendCaptainOTP = async (req, res) => {
@@ -80,4 +82,30 @@ export const completeCaptainProfile = async (req, res) => {
       message: error.message,
     });
   }
+};
+export const getCurrentRide =
+async (req, res) => {
+
+  try {
+
+    const ride =
+      await getCaptainCurrentRideService(
+        req.captain.id
+      );
+
+    res.status(200).json({
+      success: true,
+      ride,
+    });
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message:
+        error.message,
+    });
+
+  }
+
 };
