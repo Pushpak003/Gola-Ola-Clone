@@ -24,6 +24,7 @@
     "geolib": "^3.3.14",
     "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.3",
+    "pg": "^8.21.0",
     "prisma": "^6.19.3",
     "razorpay": "^2.9.6",
     "redis": "^5.12.1",
