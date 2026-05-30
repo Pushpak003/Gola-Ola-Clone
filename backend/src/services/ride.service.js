@@ -3,6 +3,7 @@ import { calculateFare } from "../utils/calculateFare.js";
 import { generateRideOTP } from "../utils/generateRideOTP.js";
 import { getNearbyDrivers } from "../utils/getNearbyDrivers.js";
 import { onlineUsers } from "../sockets/onlineUsers.js";
+import { onlineDrivers } from "../sockets/onlineDrivers.js";
 import { getIo } from "../sockets/socket.js";
 import prisma from "../config/db.js";
 
@@ -42,6 +43,18 @@ export const createRideService = async ({
 
   vehicleType,
 }) => {
+  const activeRide = await prisma.ride.findFirst({
+    where: {
+      userId,
+      status: {
+        in: ["SEARCHING", "ACCEPTED", "STARTED"],
+      },
+    },
+  });
+
+  if (activeRide) {
+    throw new Error("You already have an active ride");
+  }
   const routeData = await getDistanceService(
     pickupLng,
     pickupLat,
@@ -50,7 +63,6 @@ export const createRideService = async ({
   );
 
   const fares = calculateFare(routeData.distance);
-
   const fare = fares[vehicleType];
 
   if (!fare) {
@@ -58,7 +70,6 @@ export const createRideService = async ({
   }
 
   const otp = generateRideOTP();
-
   const ride = await prisma.ride.create({
     data: {
       userId,
@@ -80,10 +91,31 @@ export const createRideService = async ({
       status: "SEARCHING",
     },
   });
+  setTimeout(async () => {
+    const currentRide = await prisma.ride.findUnique({
+      where: {
+        id: ride.id,
+      },
+    });
+
+    if (currentRide && currentRide.status === "SEARCHING") {
+      await prisma.ride.update({
+        where: {
+          id: ride.id,
+        },
+        data: {
+          status: "CANCELLED",
+        },
+      });
+
+      console.log("Ride timed out");
+    }
+  }, 15000);
   const nearbyDrivers = getNearbyDrivers({
     lat: pickupLat,
     lng: pickupLng,
     vehicleType,
+    
   });
 
   const io = getIo();
@@ -94,31 +126,32 @@ export const createRideService = async ({
   return ride;
 };
 export const acceptRideService = async ({ rideId, captainId }) => {
-  const ride = await prisma.ride.findUnique({
+  const result = await prisma.ride.updateMany({
     where: {
       id: rideId,
+      status: "SEARCHING",
     },
-  });
-
-  if (!ride) {
-    throw new Error("Ride not found");
-  }
-
-  if (ride.status !== "SEARCHING") {
-    throw new Error("Ride already accepted");
-  }
-
-  const updatedRide = await prisma.ride.update({
-    where: {
-      id: rideId,
-    },
-
     data: {
       captainId,
       status: "ACCEPTED",
     },
   });
-  const userSocketId = onlineUsers.get(ride.userId);
+
+  if (result.count === 0) {
+    throw new Error("Ride already accepted");
+  }
+
+  const updatedRide = await prisma.ride.findUnique({
+    where: {
+      id: rideId,
+    },
+  });
+  const driver = onlineDrivers.get(captainId);
+
+  if (driver) {
+    driver.isAvailable = false;
+  }
+  const userSocketId = onlineUsers.get(updatedRide.userId);
 
   if (userSocketId) {
     const io = getIo();
@@ -161,15 +194,13 @@ export const startRideService = async ({ rideId, captainId, otp }) => {
   });
 
   return updatedRide;
-};export const completeRideService =
-async ({ rideId, captainId }) => {
-
-  const ride =
-    await prisma.ride.findUnique({
-      where: {
-        id: rideId,
-      },
-    });
+};
+export const completeRideService = async ({ rideId, captainId }) => {
+  const ride = await prisma.ride.findUnique({
+    where: {
+      id: rideId,
+    },
+  });
 
   if (!ride) {
     throw new Error("Ride not found");
@@ -183,140 +214,109 @@ async ({ rideId, captainId }) => {
     throw new Error("Ride not started");
   }
 
-  const updatedRide =
-    await prisma.ride.update({
-      where: {
-        id: rideId,
-      },
-      data: {
-        status: "COMPLETED",
-      },
-    });
+  const updatedRide = await prisma.ride.update({
+    where: {
+      id: rideId,
+    },
+    data: {
+      status: "COMPLETED",
+    },
+  });
 
   // SOCKET PART
 
-  const userSocketId =
-    onlineUsers.get(
-      ride.userId
-    );
+  const userSocketId = onlineUsers.get(updatedRide.userId);
 
-  console.log(
-    "USER SOCKET:",
-    userSocketId
-  );
+  console.log("USER SOCKET:", userSocketId);
 
   if (userSocketId) {
-
     const io = getIo();
 
-    io.to(
-      userSocketId
-    ).emit(
-      "ride-completed",
-      updatedRide
-    );
+    io.to(userSocketId).emit("ride-completed", updatedRide);
 
-    console.log(
-      "ride-completed emitted"
-    );
+    console.log("ride-completed emitted");
+  }
+  const driver = onlineDrivers.get(captainId);
 
+  if (driver) {
+    driver.isAvailable = true;
   }
 
   return updatedRide;
 };
-export const getRideHistoryService =
-async (userId) => {
+export const getRideHistoryService = async (userId) => {
+  const rides = await prisma.ride.findMany({
+    where: {
+      userId,
+    },
 
-  const rides =
-    await prisma.ride.findMany({
-      where: {
-        userId,
-      },
+    include: {
+      captain: true,
+    },
 
-      include: {
-        captain: true,
-      },
-
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return rides;
 };
-export const getCaptainRideHistoryService =
-async (captainId) => {
+export const getCaptainRideHistoryService = async (captainId) => {
+  const rides = await prisma.ride.findMany({
+    where: {
+      captainId,
+    },
 
-  const rides =
-    await prisma.ride.findMany({
-      where: {
-        captainId,
-      },
+    include: {
+      user: true,
+    },
 
-      include: {
-        user: true,
-      },
-
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return rides;
 };
-export const getCurrentRideService = async (
-  userId
-) => {
+export const getCurrentRideService = async (userId) => {
+  const ride = await prisma.ride.findFirst({
+    where: {
+      userId,
 
-  const ride =
-    await prisma.ride.findFirst({
-      where: {
-        userId,
-
-        status: {
-          in: [
-            "SEARCHING",
-            "ACCEPTED",
-            "STARTED",
-          ],
-        },
+      status: {
+        in: ["SEARCHING", "ACCEPTED", "STARTED"],
       },
+    },
 
-      include: {
-        captain: true,
-      },
+    include: {
+      captain: true,
+    },
 
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return ride;
 };
-export const getCaptainCurrentRideService =
-async (captainId) => {
+export const getCaptainCurrentRideService = async (captainId) => {
+  const ride = await prisma.ride.findFirst({
+    where: {
+      captainId,
 
-  const ride =
-    await prisma.ride.findFirst({
-      where: {
-        captainId,
-
-        status: {
-          in: [
-            "ACCEPTED",
-            "STARTED",
-          ],
-        },
+      status: {
+        in: ["ACCEPTED", "STARTED"],
       },
+    },
 
-      include: {
-        user: true,
-      },
+    include: {
+      user: true,
+    },
 
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return ride;
 };

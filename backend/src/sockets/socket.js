@@ -34,6 +34,7 @@ export const initSocket = (server) => {
           lng,
 
           vehicleType: captain.vehicleType,
+          isAvailable: true,
         });
         console.log("Online Drivers:");
 

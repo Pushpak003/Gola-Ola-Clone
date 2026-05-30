@@ -8,6 +8,11 @@ export const getNearbyDrivers = ({ lat, lng, vehicleType, radius = 5000 }) => {
     if (driver.vehicleType !== vehicleType) {
       continue;
     }
+    if (!driver.isAvailable) {
+      continue;
+    }
+    console.log("NEARBY DRIVERS", nearbyDrivers);
+    console.log("ONLINE DRIVERS", onlineDrivers);
 
     const distance = getDistance(
       {
@@ -16,7 +21,6 @@ export const getNearbyDrivers = ({ lat, lng, vehicleType, radius = 5000 }) => {
       },
       {
         latitude: driver.lat,
-
         longitude: driver.lng,
       },
     );
