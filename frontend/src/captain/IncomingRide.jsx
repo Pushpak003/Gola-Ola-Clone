@@ -1,7 +1,83 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import api from "../api/axios";
+import { useState } from "react";
+import "./Captain.css";
+
 export default function IncomingRide() {
+  const { state } = useLocation();
+  const navigate = useNavigate();
+  const ride = state?.ride;
+  const [loading, setLoading] = useState(false);
+
+  const acceptRide = async () => {
+    setLoading(true);
+    try {
+      await api.post("/ride/accept", { rideId: ride?.id });
+      navigate("/captain/live-ride", { state: { ride } });
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to accept ride");
+    } finally { setLoading(false); }
+  };
+
+  const rejectRide = () => {
+    navigate("/captain/dashboard");
+  };
+
   return (
-    <div>
-      Incoming Ride
+    <div className="incoming">
+      <div className="incoming__top">
+        <div className="incoming__logo">GOLA</div>
+        <div className="incoming__headline">⚡ New Ride Request</div>
+      </div>
+
+      <div className="incoming__card">
+        {/* Route */}
+        <div className="incoming__route">
+          <div className="incoming__route-line" />
+          <div className="incoming__point">
+            <div className="incoming__dot incoming__dot--pickup">A</div>
+            <div>
+              <div className="incoming__point-label">Pickup</div>
+              <div className="incoming__point-name">{ride?.pickup || "Pickup Location"}</div>
+            </div>
+          </div>
+          <div className="incoming__point">
+            <div className="incoming__dot incoming__dot--drop">B</div>
+            <div>
+              <div className="incoming__point-label">Drop</div>
+              <div className="incoming__point-name">{ride?.destination || "Destination"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Meta */}
+        <div className="incoming__meta">
+          <div className="incoming__meta-item">
+            <div className="incoming__meta-val">₹{ride?.fare || "—"}</div>
+            <div className="incoming__meta-key">Fare</div>
+          </div>
+          <div className="incoming__meta-item">
+            <div className="incoming__meta-val">
+              {ride?.vehicleType === "BIKE" ? "🏍️" : ride?.vehicleType === "AUTO" ? "🛺" : "🚗"}
+            </div>
+            <div className="incoming__meta-key">{ride?.vehicleType || "Vehicle"}</div>
+          </div>
+          <div className="incoming__meta-item">
+            <div className="incoming__meta-val">{ride?.otp || "—"}</div>
+            <div className="incoming__meta-key">OTP</div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="incoming__actions">
+          <button className="incoming__accept" onClick={acceptRide} disabled={loading}>
+            {loading ? "..." : "✓ Accept"}
+          </button>
+          <button className="incoming__reject" onClick={rejectRide}>
+            ✕ Decline
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

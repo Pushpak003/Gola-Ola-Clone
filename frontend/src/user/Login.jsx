@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios"; 
-import { socket } from "../sockets/socket.js"; // 🌟 FIX: Yeh import miss ho raha tha jisse Vite crash hua!
+import API from "../api/axios";
+import { socket } from "../sockets/socket.js";
+import "./Auth.css";
 
 const UserLogin = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -9,161 +10,108 @@ const UserLogin = () => {
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
-  // Agar user pehle se logged in hai, toh directly home bhejo
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
-    if (token && role === "user") {
-      navigate("/home");
-    }
+    if (token && role === "user") navigate("/home");
   }, [navigate]);
 
-  // Step 1: Send OTP to Backend
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (phoneNumber.length < 10)
-      return setError("Valid phone number daalo bhai!");
-
-    setError("");
-    setLoading(true);
+    if (phoneNumber.length < 10) return setError("Enter a valid 10-digit number");
+    setError(""); setLoading(true);
     try {
       await API.post("/auth/send-otp", { phone: phoneNumber });
       setIsOtpSent(true);
     } catch (err) {
-      setError(err.response?.data?.message || "OTP bhejne me dikkat aayi.");
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.message || "Failed to send OTP");
+    } finally { setLoading(false); }
   };
 
-  // Step 2: Verify OTP & Save Token
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    if (otp.length < 4) return setError("Poora OTP daalo.");
-
-    setError("");
-    setLoading(true);
+    if (otp.length < 4) return setError("Enter complete OTP");
+    setError(""); setLoading(true);
     try {
-      const response = await API.post("/auth/verify-otp", {
-        phone: phoneNumber,
-        otp: otp,
-      });
-
+      const response = await API.post("/auth/verify-otp", { phone: phoneNumber, otp });
       if (response.data.token) {
-        const userToken = response.data.token;
-
-        // Local storage setup with strict 'token' key
-        localStorage.setItem("token", userToken);
+        localStorage.setItem("token", response.data.token);
         localStorage.setItem("role", "user");
-
-        // Real-time socket authentication trigger
         socket.connect();
-        socket.emit("user-online", { token: userToken });
-        console.log("USER LOGGED IN & SOCKET EMITTED SUCCESSFULLY");
-        
+        socket.emit("user-online", { token: response.data.token });
         navigate("/home");
       }
     } catch (err) {
-      console.log(err);
-      setError(err.response?.data?.message || "Invalid OTP. Phir se try karo.");
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.message || "Invalid OTP. Try again.");
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col justify-between bg-white p-6 font-sans">
-      <div>
-        {/* Brand Logo */}
-        <h2 className="text-3xl font-extrabold tracking-wider mb-8 text-black">
-          GOLA
-        </h2>
+    <div className="auth">
+      <div className="auth__top">
+        <div className="auth__logo">GOLA</div>
+      </div>
 
-        <div className="space-y-2 mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">
-            {isOtpSent ? "Enter verification code" : "What's your number?"}
-          </h3>
-          <p className="text-sm text-gray-500">
+      <div className="auth__body animate-fade-up">
+        <div className="auth__header">
+          <h1 className="auth__title">
+            {isOtpSent ? "Enter OTP" : "Welcome back"}
+          </h1>
+          <p className="auth__desc">
             {isOtpSent
-              ? `We sent an OTP to +91 ${phoneNumber}`
-              : "Sign in to book your flexible Gola rides."}
+              ? `Sent to +91 ${phoneNumber}`
+              : "Sign in to book your next ride"}
           </p>
         </div>
 
-        {error && (
-          <p className="text-red-500 text-sm mb-4 font-medium">⚠️ {error}</p>
-        )}
+        {error && <div className="auth__error">⚠️ {error}</div>}
 
         {!isOtpSent ? (
-          /* Phone Number Form */
-          <form onSubmit={handleSendOTP} className="space-y-4">
-            <div className="flex items-center bg-gray-100 rounded-lg p-3 border focus-within:border-black transition">
-              <span className="text-gray-600 font-semibold border-r border-gray-300 pr-3 mr-3">
-                +91
-              </span>
+          <form onSubmit={handleSendOTP} className="auth__form">
+            <div className="auth__field">
+              <span className="auth__prefix">+91</span>
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) =>
-                  setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                }
-                placeholder="Enter mobile number"
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+                placeholder="Mobile number"
                 maxLength={10}
-                className="bg-transparent w-full focus:outline-none text-base font-medium tracking-wide"
+                className="auth__input"
                 required
+                autoFocus
               />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-black text-white py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-950 transition active:scale-98 disabled:bg-gray-400"
-            >
-              {loading ? "Sending..." : "Continue"}
+            <button type="submit" className="auth__btn" disabled={loading}>
+              {loading ? <span className="auth__spinner" /> : "Continue →"}
             </button>
           </form>
         ) : (
-          /* OTP Form */
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
+          <form onSubmit={handleVerifyOTP} className="auth__form">
             <input
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="Enter 4 or 6 digit OTP"
+              placeholder="• • • • • •"
               maxLength={6}
-              className="w-full bg-gray-100 px-4 py-3.5 rounded-lg text-center text-xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-black"
+              className="auth__input auth__input--otp"
               required
+              autoFocus
             />
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-black text-white py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-950 transition active:scale-98 disabled:bg-gray-400"
-            >
-              {loading ? "Verifying..." : "Verify & Login"}
+            <button type="submit" className="auth__btn" disabled={loading}>
+              {loading ? <span className="auth__spinner" /> : "Verify & Login"}
             </button>
-            <button
-              type="button"
-              onClick={() => setIsOtpSent(false)}
-              className="text-xs text-center w-full block text-gray-500 font-medium hover:underline"
-            >
-              Change Phone Number
+            <button type="button" className="auth__link" onClick={() => setIsOtpSent(false)}>
+              ← Change number
             </button>
           </form>
         )}
       </div>
 
-      {/* Bottom Disclaimer & Flow switch */}
-      <div className="text-center space-y-4">
-        <p className="text-[11px] text-gray-400 px-4">
-          By proceeding, you consent to receive SMS or WhatsApp notifications
-          from Gola.
-        </p>
-        <div
-          onClick={() => navigate("/captain/login")}
-          className="w-full border border-gray-300 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer text-center transition"
-        >
+      <div className="auth__footer">
+        <p className="auth__footer-text">By proceeding, you agree to receive SMS from Gola</p>
+        <div className="auth__switch" onClick={() => navigate("/captain/login")}>
           Sign in as Captain 🏍️
         </div>
       </div>

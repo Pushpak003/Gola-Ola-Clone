@@ -1,206 +1,244 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import { socket } from "../sockets/socket.js";
+import "./VehicleSelection.css";
+
+// Inline SVG icons — Ola-style flat vehicle illustrations
+const VehicleIcons = {
+  BIKE: () => (
+    <svg viewBox="0 0 80 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="72" height="44">
+      <circle cx="16" cy="36" r="10" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="64" cy="36" r="10" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="16" cy="36" r="3" fill="currentColor"/>
+      <circle cx="64" cy="36" r="3" fill="currentColor"/>
+      <path d="M16 26 L30 14 L46 14 L56 26 L36 26 Z" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinejoin="round"/>
+      <path d="M36 26 L40 14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M56 26 L64 26" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M44 10 L52 10 L56 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M40 12 C40 12 42 8 46 8 L50 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
+  AUTO: () => (
+    <svg viewBox="0 0 80 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="72" height="46">
+      <circle cx="20" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="60" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="20" cy="40" r="3" fill="currentColor"/>
+      <circle cx="60" cy="40" r="3" fill="currentColor"/>
+      <path d="M8 40 L8 28 L16 14 L64 14 L72 28 L72 40 L8 40 Z" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinejoin="round"/>
+      <path d="M8 28 L72 28" stroke="currentColor" strokeWidth="2"/>
+      <path d="M20 28 L20 14" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4"/>
+      <path d="M44 28 L44 14" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4"/>
+      <rect x="24" y="16" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <rect x="46" y="16" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <path d="M4 32 L8 32" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M72 32 L76 32" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  ),
+  MINI: () => (
+    <svg viewBox="0 0 80 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="72" height="46">
+      <circle cx="22" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="58" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="22" cy="40" r="3" fill="currentColor"/>
+      <circle cx="58" cy="40" r="3" fill="currentColor"/>
+      <path d="M6 32 L6 40 L13 40" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M67 40 L74 40 L74 32 L66 18 L14 18 L6 32 L74 32" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinejoin="round"/>
+      <path d="M20 18 L18 32" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4"/>
+      <path d="M44 18 L44 32" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4"/>
+      <path d="M22 18 C22 18 24 10 40 10 C56 10 58 18 58 18" stroke="currentColor" strokeWidth="2.5" fill="none"/>
+      <rect x="22" y="20" width="18" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <rect x="44" y="20" width="14" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <path d="M6 36 L2 36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M74 36 L78 36" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
+  ),
+  SEDAN: () => (
+    <svg viewBox="0 0 88 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="80" height="46">
+      <circle cx="24" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="64" cy="40" r="9" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="24" cy="40" r="3" fill="currentColor"/>
+      <circle cx="64" cy="40" r="3" fill="currentColor"/>
+      <path d="M4 34 L4 40 L15 40" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M73 40 L84 40 L84 34 L76 20 L18 20 L8 34 L4 34" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinejoin="round"/>
+      <path d="M8 34 L84 34" stroke="currentColor" strokeWidth="2"/>
+      <path d="M20 20 C20 20 24 12 44 12 C62 12 68 20 68 20" stroke="currentColor" strokeWidth="2.5" fill="none"/>
+      <rect x="20" y="22" width="20" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <rect x="48" y="22" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <path d="M4 30 L1 30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M84 30 L87 30" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M42 20 L42 12" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4"/>
+    </svg>
+  ),
+  SUV: () => (
+    <svg viewBox="0 0 92 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="84" height="50">
+      <circle cx="24" cy="44" r="10" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="68" cy="44" r="10" stroke="currentColor" strokeWidth="3" fill="none"/>
+      <circle cx="24" cy="44" r="3.5" fill="currentColor"/>
+      <circle cx="68" cy="44" r="3.5" fill="currentColor"/>
+      <path d="M4 36 L4 44 L14 44" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M78 44 L88 44 L88 24 L80 12 L14 12 L6 24 L4 36 L88 36" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinejoin="round"/>
+      <path d="M14 12 L14 36" stroke="currentColor" strokeWidth="2" strokeOpacity="0.4"/>
+      <path d="M46 12 L46 36" stroke="currentColor" strokeWidth="2" strokeOpacity="0.4"/>
+      <rect x="16" y="14" width="26" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.65"/>
+      <rect x="48" y="14" width="26" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.65"/>
+      <path d="M4 30 L1 30" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M88 30 L91 30" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M80 12 L88 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5"/>
+    </svg>
+  ),
+};
+
+const RIDE_OPTIONS = [
+  { id: "BIKE",  name: "Gola Moto",   tag: "Fastest",   seats: 1, eta: "2 min",  desc: "Beat city traffic" },
+  { id: "AUTO",  name: "Gola Auto",   tag: "Budget",    seats: 3, eta: "3 min",  desc: "Affordable, open-air" },
+  { id: "MINI",  name: "Gola Mini",   tag: "Popular",   seats: 4, eta: "4 min",  desc: "Compact everyday car" },
+  { id: "SEDAN", name: "Gola Sedan",  tag: "Comfort",   seats: 4, eta: "5 min",  desc: "Spacious & smooth" },
+  { id: "SUV",   name: "Gola SUV",    tag: "Premium",   seats: 6, eta: "6 min",  desc: "For those who travel big" },
+];
 
 export default function VehicleSelection() {
   const { state } = useLocation();
   const navigate = useNavigate();
-
   const [fares, setFares] = useState(null);
-  // 🌟 CHANGE: Default selection keys ko exact Postman logic uppercase database Enums par rakha
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [booking, setBooking] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const getFare = async () => {
-      try {
-        const params = {
-          pickupLat: state?.pickupLocation?.lat,
-          pickupLng: state?.pickupLocation?.lng,
-          destinationLat: state?.destinationLocation?.lat,
-          destinationLng: state?.destinationLocation?.lng,
-        };
+    if (!state?.pickupLocation || !state?.destinationLocation) { navigate("/home"); return; }
+    api.get("/ride/fare", {
+      params: {
+        pickupLat: state.pickupLocation.lat,
+        pickupLng: state.pickupLocation.lng,
+        destinationLat: state.destinationLocation.lat,
+        destinationLng: state.destinationLocation.lng,
+      },
+    }).then(({ data }) => {
+      if (data?.success && data?.data?.fares) setFares(data.data.fares);
+      else setError("Could not load fares.");
+    }).catch(() => setError("Failed to fetch fares."));
+  }, [state, navigate]);
 
-        const response = await api.get("/ride/fare", { params });
-        console.log("RAW FARE FROM BACKEND =>", response.data);
-
-        if (response.data?.success && response.data?.data?.fares) {
-          setFares(response.data.data.fares);
-        } else if (response.data?.data) {
-          setFares(response.data.data);
-        }
-      } catch (error) {
-        console.log("ERROR FETCHING FARES =>", error);
-      }
-    };
-
-    if (state?.pickupLocation) {
-      getFare();
-    }
-  }, [state]);
-
-  console.log("USER TOKEN =>", localStorage.getItem("userToken"));
-  console.log("CAPTAIN TOKEN =>", localStorage.getItem("captainToken"));
-  console.log("TOKEN =>", localStorage.getItem("token"));
-  const handleBookRide = async () => {
-    console.log("TOKEN =>", localStorage.getItem("token"));
-    if (!selectedVehicle) {
-      return alert("Pehle ek gadi select karo bhai! 🚗/🛺/🏍️");
-    }
-
-    setBookingLoading(true);
+  const handleBook = async () => {
+    if (!selected) return;
+    setBooking(true);
     try {
-      // 🌟 EXACT POSTMAN PAYLOAD MATCH
-      const payload = {
-        pickup: state?.pickupLocation?.name,
-        destination: state?.destinationLocation?.name,
-        pickupLat: Number(state?.pickupLocation?.lat),
-        pickupLng: Number(state?.pickupLocation?.lng),
-        destinationLat: Number(state?.destinationLocation?.lat),
-        destinationLng: Number(state?.destinationLocation?.lng),
-        vehicleType: selectedVehicle, // Isme direct "BIKE", "AUTO", ya "MINI" jayega
-      };
-
-      console.log("SENDING POSTMAN IDENTICAL PAYLOAD =>", payload);
-      const response = await api.post("/ride/create", payload);
-
-      if (response.data?.success) {
-        const rideData = response.data.ride;
-
+      const { data } = await api.post("/ride/create", {
+        pickup: state.pickupLocation.name,
+        destination: state.destinationLocation.name,
+        pickupLat: Number(state.pickupLocation.lat),
+        pickupLng: Number(state.pickupLocation.lng),
+        destinationLat: Number(state.destinationLocation.lat),
+        destinationLng: Number(state.destinationLocation.lng),
+        vehicleType: selected,
+      });
+      if (data?.success) {
         navigate("/user/searching-ride", {
           state: {
-            rideId: rideData.id,
-            pickup: state?.pickupLocation?.name,
-            destination: state?.destinationLocation?.name,
-            // 🌟 SAFE EXTRACT: Keys matching uppercase map pattern
-            fare:
-              fares[selectedVehicle] || fares[selectedVehicle.toLowerCase()],
-            vehicleType: selectedVehicle,
+            rideId: data.ride.id,
+            pickup: state.pickupLocation.name,
+            destination: state.destinationLocation.name,
+            pickupLat: state.pickupLocation.lat,
+            pickupLng: state.pickupLocation.lng,
+            destinationLat: state.destinationLocation.lat,
+            destinationLng: state.destinationLocation.lng,
+            fare: fares[selected],
+            vehicleType: selected,
+            otp: data.ride.otp,
           },
         });
       }
-    } catch (error) {
-      console.log(
-        "BOOKING FAILURE FROM BACKEND =>",
-        error.response?.data || error,
-      );
-      alert(error.response?.data?.message || "Booking request failed.");
-    } finally {
-      setBookingLoading(false);
-    }
+    } catch (err) {
+      alert(err.response?.data?.message || "Booking failed.");
+    } finally { setBooking(false); }
   };
 
-  if (!fares) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-white gap-2">
-        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-xs text-gray-500 font-medium">
-          Calculating dynamic fares...
-        </p>
-      </div>
-    );
-  }
+  if (error) return (
+    <div className="vsel vsel--err">
+      <p>⚠️ {error}</p>
+      <button onClick={() => navigate("/home")}>← Go Back</button>
+    </div>
+  );
 
-  // 🌟 MAP CONFIG USING STRICT UPPERCASE ENUMS AS IDS
-  const rideCategories = [
-    {
-      id: "MINI",
-      title: "Gola Cab Premium",
-      price: fares.car || fares.MINI,
-      icon: "🚗",
-      eta: "3 mins away",
-      capacity: 4,
-    },
-    {
-      id: "AUTO",
-      title: "Gola Auto Eco",
-      price: fares.auto || fares.AUTO,
-      icon: "🛺",
-      eta: "1 min away",
-      capacity: 3,
-    },
-    {
-      id: "BIKE",
-      title: "Gola Bike Moto",
-      price: fares.bike || fares.BIKE,
-      icon: "🏍️",
-      eta: "2 mins away",
-      capacity: 1,
-    },
-  ];
+  if (!fares) return (
+    <div className="vsel vsel--loading">
+      <div className="vsel__spin" />
+      <p>Calculating fares...</p>
+    </div>
+  );
+
+  const selectedOption = RIDE_OPTIONS.find(o => o.id === selected);
 
   return (
-    <div className="h-screen w-screen bg-gray-50 p-5 flex flex-col justify-between font-sans">
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={() => navigate("/home")}
-            className="text-sm font-semibold text-gray-500 hover:text-black"
-          >
-            ← Change Route
-          </button>
-          <h2 className="text-base font-bold text-gray-900">Select Options</h2>
-        </div>
+    <div className="vsel">
+      <div className="vsel__header">
+        <button className="vsel__back" onClick={() => navigate("/home")}>←</button>
+        <span className="vsel__title">Choose a ride</span>
+        <div style={{ width: 38 }} />
+      </div>
 
-        <div className="bg-white p-3 rounded-xl shadow-sm mb-4 border text-xs text-gray-500 space-y-1">
-          <p className="truncate">
-            <span className="text-green-500 font-bold">From:</span>{" "}
-            {state?.pickupLocation?.name}
-          </p>
-          <p className="truncate">
-            <span className="text-red-500 font-bold">To:</span>{" "}
-            {state?.destinationLocation?.name}
-          </p>
+      <div className="vsel__route">
+        <div className="vsel__route-row">
+          <span className="vsel__rdot vsel__rdot--g" />
+          <span className="vsel__rname">{state?.pickupLocation?.name}</span>
         </div>
-
-        <div className="space-y-3">
-          {rideCategories.map((ride) => (
-            <div
-              key={ride.id}
-              onClick={() => {
-                console.log("SELECTED VEHICLE KEY =>", ride.id);
-                setSelectedVehicle(ride.id);
-              }}
-              className={`flex items-center justify-between p-4 bg-white border-2 rounded-2xl shadow-sm cursor-pointer transition-all duration-200 active:scale-98 ${
-                selectedVehicle === ride.id
-                  ? "border-black bg-gray-50 ring-1 ring-black"
-                  : "border-transparent hover:border-gray-200"
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-3xl bg-gray-100 p-2 rounded-xl">
-                  {ride.icon}
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-gray-900 text-sm">
-                      {ride.title}
-                    </h4>
-                    <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
-                      👤 {ride.capacity}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{ride.eta}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <span className="font-extrabold text-gray-900 text-base">
-                  ₹{ride.price || "0"}
-                </span>
-              </div>
-            </div>
-          ))}
+        <div className="vsel__rline" />
+        <div className="vsel__route-row">
+          <span className="vsel__rdot vsel__rdot--r" />
+          <span className="vsel__rname">{state?.destinationLocation?.name}</span>
         </div>
       </div>
 
-      <button
-        onClick={handleBookRide}
-        disabled={bookingLoading}
-        className="w-full bg-black text-white py-4 rounded-xl font-bold hover:bg-gray-950 transition text-sm shadow-lg disabled:bg-gray-400 mb-2"
-      >
-        {bookingLoading ? "Requesting Gola..." : "Confirm Ride Booking"}
-      </button>
+      <div className="vsel__list">
+        {RIDE_OPTIONS.map((opt, i) => {
+          const Icon = VehicleIcons[opt.id];
+          const price = fares[opt.id];
+          const isSelected = selected === opt.id;
+          return (
+            <div
+              key={opt.id}
+              className={`vsel__card ${isSelected ? "vsel__card--on" : ""}`}
+              onClick={() => setSelected(opt.id)}
+              style={{ animationDelay: `${i * 0.06}s` }}
+            >
+              <div className="vsel__card-icon">
+                <Icon />
+              </div>
+              <div className="vsel__card-info">
+                <div className="vsel__card-top">
+                  <span className="vsel__card-name">{opt.name}</span>
+                  <span className={`vsel__card-tag vsel__card-tag--${opt.id.toLowerCase()}`}>{opt.tag}</span>
+                </div>
+                <div className="vsel__card-meta">
+                  <span>⏱ {opt.eta}</span>
+                  <span>·</span>
+                  <span>👤 {opt.seats}</span>
+                  <span>·</span>
+                  <span>{opt.desc}</span>
+                </div>
+              </div>
+              <div className="vsel__card-price">
+                ₹{price ? Math.round(price) : "—"}
+              </div>
+              {isSelected && <div className="vsel__check">✓</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="vsel__footer">
+        <button
+          className={`vsel__book ${selected ? "vsel__book--on" : ""}`}
+          onClick={handleBook}
+          disabled={!selected || booking}
+        >
+          {booking
+            ? <><span className="g-spinner" /> Booking...</>
+            : selected
+              ? `Book ${selectedOption?.name} → ₹${Math.round(fares[selected])}`
+              : "Select a vehicle"
+          }
+        </button>
+      </div>
     </div>
   );
 }
