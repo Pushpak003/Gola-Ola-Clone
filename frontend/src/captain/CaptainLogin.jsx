@@ -15,30 +15,43 @@ export default function CaptainLogin() {
   const sendOTP = async (e) => {
     e.preventDefault();
     if (phone.length < 10) return setError("Enter a valid 10-digit number");
-    setError(""); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
       await api.post("/captain/send-otp", { phone });
       setOtpSent(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const verifyOTP = async (e) => {
     e.preventDefault();
     if (otp.length < 4) return setError("Enter complete OTP");
-    setError(""); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
       const response = await api.post("/captain/verify-otp", { phone, otp });
-      const { token, captain } = response.data;
+      const { token, captain, onboardingRequired, phone: serverPhone } = response.data;
+
+      if (onboardingRequired) {
+        localStorage.setItem("captainPhone", phone);
+        navigate("/captain/complete-profile");
+        return;
+      }
+
       localStorage.setItem("captainToken", token);
       localStorage.setItem("token", token);
       localStorage.setItem("role", "captain");
-      const profileCompleted = captain?.fullname && captain?.vehicleType && captain?.vehicleNumber;
-      navigate(profileCompleted ? "/captain/dashboard" : "/captain/complete-profile");
+      navigate("/captain/dashboard");
+
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,7 +67,9 @@ export default function CaptainLogin() {
             {otpSent ? "Enter OTP" : "Captain Login"}
           </h1>
           <p className="auth__desc">
-            {otpSent ? `Sent to +91 ${phone}` : "Sign in to start accepting rides"}
+            {otpSent
+              ? `Sent to +91 ${phone}`
+              : "Sign in to start accepting rides"}
           </p>
         </div>
 
@@ -71,10 +86,15 @@ export default function CaptainLogin() {
                 placeholder="Mobile number"
                 maxLength={10}
                 className="auth__input"
-                required autoFocus
+                required
+                autoFocus
               />
             </div>
-            <button type="submit" className="auth__btn captain-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="auth__btn captain-btn"
+              disabled={loading}
+            >
               {loading ? <span className="auth__spinner" /> : "Send OTP →"}
             </button>
           </form>
@@ -87,12 +107,21 @@ export default function CaptainLogin() {
               placeholder="• • • • • •"
               maxLength={6}
               className="auth__input auth__input--otp"
-              required autoFocus
+              required
+              autoFocus
             />
-            <button type="submit" className="auth__btn captain-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="auth__btn captain-btn"
+              disabled={loading}
+            >
               {loading ? <span className="auth__spinner" /> : "Verify & Login"}
             </button>
-            <button type="button" className="auth__link" onClick={() => setOtpSent(false)}>
+            <button
+              type="button"
+              className="auth__link"
+              onClick={() => setOtpSent(false)}
+            >
               ← Change number
             </button>
           </form>

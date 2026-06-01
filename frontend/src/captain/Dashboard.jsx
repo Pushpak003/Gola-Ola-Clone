@@ -5,57 +5,43 @@ import "./Captain.css";
 
 export default function Dashboard() {
   const [isOnline, setIsOnline] = useState(false);
-  const locationIntervalRef = useRef(null);
   const navigate = useNavigate();
+  // No location interval here — location is only emitted during an active ride (CaptainLiveRide page)
 
   const goOnline = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude: lat, longitude: lng } = position.coords;
-
         socket.connect();
-        // Emit captain-online with token + initial location
         socket.emit("captain-online", {
           token: localStorage.getItem("captainToken"),
-          lat,
-          lng,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
         });
+        // FIX: do NOT add socket.on("new-ride") here — it's already in useEffect below
+        // Adding it here creates duplicate listeners every time Go Online is clicked
         setIsOnline(true);
-
-        // Continuously send location updates every 5 seconds
-        locationIntervalRef.current = setInterval(() => {
-          navigator.geolocation.getCurrentPosition((pos) => {
-            socket.emit("captain-location", {
-              rideId: null, // no active ride yet; backend handles null
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-            });
-          });
-        }, 5000);
       },
       () => alert("Location permission required to go online")
     );
   };
 
   const goOffline = () => {
-    clearInterval(locationIntervalRef.current);
     socket.disconnect();
     setIsOnline(false);
   };
 
   useEffect(() => {
+    // Single listener — no duplicates
     const onNewRide = (ride) => {
+      console.log("NEW RIDE =>", ride);
       navigate("/captain/incoming-ride", { state: { ride } });
     };
     socket.on("new-ride", onNewRide);
-    return () => {
-      socket.off("new-ride", onNewRide);
-      clearInterval(locationIntervalRef.current);
-    };
+    return () => socket.off("new-ride", onNewRide);
   }, [navigate]);
 
   const handleLogout = () => {
-    goOffline();
+    if (isOnline) socket.disconnect();
     localStorage.removeItem("captainToken");
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -109,6 +95,9 @@ export default function Dashboard() {
       </div>
 
       <div className="cdash__footer">
+        <button className="cdash__history" onClick={() => navigate("/captain/history")}>
+          Ride History
+        </button>
         <button className="cdash__logout" onClick={handleLogout}>Sign out</button>
       </div>
     </div>

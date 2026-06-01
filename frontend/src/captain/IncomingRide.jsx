@@ -12,7 +12,11 @@ export default function IncomingRide() {
   const acceptRide = async () => {
     setLoading(true);
     try {
-      await api.post("/ride/accept", { rideId: ride?.id });
+      await api.post("/ride/accept", { rideId: ride?.id }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("captainToken")}`,
+        }
+      });
       navigate("/captain/live-ride", { state: { ride } });
     } catch (err) {
       alert(err.response?.data?.message || "Failed to accept ride");

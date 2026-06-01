@@ -1,30 +1,42 @@
 import axios from "axios";
 
-// Instance directly window/module scope me create karo
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
   timeout: 10000,
 });
 
-// Yahan check karo ki API define ho chuka hai ya nahi
+const PUBLIC_ROUTES = [
+  "/auth/send-otp",
+  "/auth/verify-otp",
+  "/captain/send-otp",
+  "/captain/verify-otp",
+];
+
 if (API && API.interceptors) {
   API.interceptors.request.use(
     (config) => {
-      const token =
-        localStorage.getItem("token") ||
-        localStorage.getItem("captainToken");
+      const isPublic = PUBLIC_ROUTES.some((route) =>
+        config.url?.includes(route)
+      );
 
-      console.log("AXIOS TOKEN =>", token);
+      if (!isPublic) {
+        const role = localStorage.getItem("role");
+        const token = role === "captain"
+          localStorage.getItem("token") ||
+          localStorage.getItem("captainToken");
 
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
-      console.log("AUTH HEADER =>", config.headers.Authorization);
+
+      // Remove these console.logs in production
+      console.log("Request URL =>", config.url);
+      console.log("Is Public =>", isPublic);
+
       return config;
     },
-    (error) => {
-      return Promise.reject(error);
-    },
+    (error) => Promise.reject(error)
   );
 }
 

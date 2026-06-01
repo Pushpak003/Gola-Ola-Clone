@@ -550,3 +550,211 @@
 }
 .clive__complete-btn:hover { background: var(--gray-700); }
 .clive__complete-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+/* ══════════════════════════════════
+   CAPTAIN LIVERIDE — MAP LAYOUT
+══════════════════════════════════ */
+.clive {
+  height: 100dvh; width: 100%;
+  position: relative; overflow: hidden;
+  background: var(--gray-50);
+}
+
+.clive__map {
+  position: absolute; inset: 0; z-index: 0;
+}
+
+.clive__map-topbar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 20px 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 10; pointer-events: none;
+}
+.clive__logo {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 0.12em;
+  color: var(--white); background: var(--black);
+  padding: 8px 16px; border-radius: 100px;
+  box-shadow: var(--shadow-md); pointer-events: all;
+}
+.clive__tag {
+  background: var(--black); color: var(--white);
+  font-size: 12px; font-weight: 600;
+  padding: 8px 14px; border-radius: 100px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Bottom sheet */
+.clive__sheet {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 20px 20px 40px;
+  z-index: 10;
+  box-shadow: 0 -6px 32px rgba(0,0,0,0.14);
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* Route pills */
+.clive__route-pills {
+  display: flex; align-items: center; gap: 8px;
+  padding-bottom: 12px; border-bottom: 1.5px solid var(--gray-100);
+}
+.clive__pill {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1; min-width: 0;
+  background: var(--gray-50); border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.clive__pill-label {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 900; color: white; flex-shrink: 0;
+}
+.clive__pill--a .clive__pill-label { background: var(--green); }
+.clive__pill--b .clive__pill-label { background: var(--red); }
+.clive__pill-text { font-size: 12px; font-weight: 500; color: var(--gray-600); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clive__pill-arrow { font-size: 16px; color: var(--gray-300); flex-shrink: 0; }
+
+/* Fare row */
+.clive__fare-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--gray-50); border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.clive__fare-key { font-size: 13px; font-weight: 600; color: var(--gray-500); }
+.clive__fare-val { font-size: 20px; font-weight: 800; color: var(--black); font-family: 'Syne', sans-serif; }
+
+.clive__error {
+  background: #fff5f5; border: 1px solid #fed7d7;
+  color: var(--red); font-size: 13px; font-weight: 500;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+}
+
+/* OTP section */
+.clive__otp-section { display: flex; flex-direction: column; gap: 10px; }
+.clive__otp-field {
+  width: 100%; background: var(--gray-50);
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-md);
+  padding: 14px; font-size: 22px; font-weight: 700;
+  letter-spacing: 0.2em; text-align: center; color: var(--black);
+  transition: border-color 0.18s;
+}
+.clive__otp-field:focus { border-color: var(--black); }
+
+.clive__start-btn {
+  width: 100%; padding: 15px;
+  background: var(--green); color: var(--white);
+  border-radius: var(--radius-md); font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.clive__start-btn:hover { background: #18a349; }
+.clive__start-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+.clive__complete-btn {
+  width: 100%; padding: 15px;
+  background: var(--black); color: var(--white);
+  border-radius: var(--radius-md); font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.clive__complete-btn:hover { background: var(--gray-700); }
+.clive__complete-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+/* Captain self marker on map */
+.captain-self-marker {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  animation: captain-bob 1.5s ease-in-out infinite;
+  cursor: default;
+}
+
+/* ===== CAPTAIN LIVE RIDE (map version) ===== */
+.clive {
+  height: 100dvh; width: 100%;
+  position: relative; overflow: hidden;
+  background: var(--black);
+}
+.clive__map {
+  position: absolute; inset: 0; z-index: 0;
+}
+.clive__topbar {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 18px 18px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 10; pointer-events: none;
+}
+.clive__logo {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px;
+  color: var(--white); background: var(--black);
+  padding: 8px 16px; border-radius: 100px;
+  box-shadow: var(--shadow-md); pointer-events: all; letter-spacing: 0.1em;
+}
+.clive__tag {
+  background: var(--white); color: var(--black);
+  font-size: 11px; font-weight: 700;
+  padding: 7px 14px; border-radius: 100px;
+  box-shadow: var(--shadow-md); pointer-events: all;
+}
+.clive__sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 10px 18px 36px;
+  z-index: 10;
+  box-shadow: 0 -6px 30px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s ease;
+}
+.clive__sheet-handle {
+  width: 36px; height: 4px; background: var(--gray-200);
+  border-radius: 2px; margin: 0 auto 14px;
+}
+.clive__route-mini { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.clive__rrow { display: flex; align-items: center; gap: 10px; }
+.clive__rdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.clive__rdot--g { background: var(--green); }
+.clive__rdot--r { background: var(--red); }
+.clive__rname { font-size: 13px; font-weight: 500; color: var(--gray-600); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clive__rline { width: 1.5px; height: 12px; background: var(--gray-200); margin-left: 4px; }
+.clive__meta-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  margin-bottom: 14px;
+}
+.clive__meta-item {
+  background: var(--gray-50); border-radius: var(--radius-sm);
+  padding: 10px; text-align: center;
+}
+.clive__meta-val { font-size: 16px; font-weight: 800; color: var(--black); display: block; font-family: 'Syne', sans-serif; }
+.clive__meta-key { font-size: 10px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.clive__error { background: #fff5f5; border: 1px solid #fed7d7; color: var(--red); font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; }
+.clive__otp-section { display: flex; flex-direction: column; gap: 10px; }
+.clive__otp-hint { font-size: 13px; color: var(--gray-500); font-weight: 500; }
+.clive__otp-input {
+  width: 100%; background: var(--gray-50); border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-md); padding: 14px;
+  font-size: 22px; font-weight: 700; letter-spacing: 0.2em; text-align: center;
+  color: var(--black); transition: border-color 0.18s;
+}
+.clive__otp-input:focus { border-color: var(--black); }
+.clive__start-btn {
+  width: 100%; padding: 15px; background: var(--green); color: var(--white);
+  border-radius: var(--radius-md); font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.clive__start-btn:hover { background: #18a349; }
+.clive__start-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+.clive__complete-btn {
+  width: 100%; padding: 16px; background: var(--black); color: var(--white);
+  border-radius: var(--radius-md); font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.clive__complete-btn:hover { background: var(--gray-700); }
+.clive__complete-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+.cdash__history {
+  background: rgba(255,255,255,0.1); color: var(--white);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 13px; font-weight: 600;
+  padding: 9px 18px; border-radius: 100px;
+  margin-bottom: 8px;
+}
+.cdash__history:hover { background: rgba(255,255,255,0.15); }

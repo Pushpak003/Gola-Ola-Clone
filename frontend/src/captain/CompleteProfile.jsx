@@ -5,6 +5,7 @@ import "./Captain.css";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
+  const phone = localStorage.getItem("captainPhone");
   const [fullname, setFullname] = useState("");
   const [vehicleType, setVehicleType] = useState("BIKE");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -24,6 +25,7 @@ export default function CompleteProfile() {
     try {
       await api.post("/captain/complete-profile", {
         fullname,
+        phone,
         vehicleType,
         vehicleNumber,
       });

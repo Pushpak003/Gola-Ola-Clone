@@ -206,7 +206,7 @@ export default function Home() {
       {/* Top bar */}
       <div className="home__topbar">
         <span className="home__logo">GOLA</span>
-        <button className="home__logout" onClick={handleLogout}>Sign out</button>
+        <div className="home__topbar-right"><button className="home__history-btn" onClick={() => navigate("/user/history")}>History</button><button className="home__logout" onClick={handleLogout}>Sign out</button></div>
       </div>
 
       {/* Bottom sheet */}

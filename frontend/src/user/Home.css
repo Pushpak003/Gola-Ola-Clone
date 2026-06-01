@@ -217,3 +217,11 @@
   cursor: pointer;
 }
 .home__cta--active:hover { background: var(--gray-700); }
+.home__topbar-right { display: flex; gap: 8px; pointer-events: all; }
+.home__history-btn {
+  background: rgba(255,255,255,0.9); color: var(--black);
+  font-size: 12px; font-weight: 600;
+  padding: 8px 14px; border-radius: 100px;
+  box-shadow: var(--shadow-md);
+}
+.home__history-btn:hover { background: var(--white); }
