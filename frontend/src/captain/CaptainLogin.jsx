@@ -42,6 +42,7 @@ export default function CaptainLogin() {
         return;
       }
 
+      localStorage.clear();
       localStorage.setItem("captainToken", token);
       localStorage.setItem("token", token);
       localStorage.setItem("role", "captain");

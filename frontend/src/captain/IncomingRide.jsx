@@ -5,22 +5,33 @@ import "./Captain.css";
 
 export default function IncomingRide() {
   const { state } = useLocation();
+  console.log("Incoming Ride State:", state);
   const navigate = useNavigate();
   const ride = state?.ride;
   const [loading, setLoading] = useState(false);
 
   const acceptRide = async () => {
+    if (!ride?.id)
+      return alert("Ride data missing!");
+    if (loading) return; // ← double click prevent
     setLoading(true);
     try {
-      await api.post("/ride/accept", { rideId: ride?.id }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("captainToken")}`,
-        }
-      });
-      navigate("/captain/live-ride", { state: { ride } });
+      const res =
+      await api.post(
+        "/ride/accept",
+        { rideId: ride?.id },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("captainToken")}`,
+          },
+        },
+      );
+      navigate("/captain/live-ride", { state: { ride: res.data.ride } });
     } catch (err) {
       alert(err.response?.data?.message || "Failed to accept ride");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const rejectRide = () => {
@@ -42,14 +53,18 @@ export default function IncomingRide() {
             <div className="incoming__dot incoming__dot--pickup">A</div>
             <div>
               <div className="incoming__point-label">Pickup</div>
-              <div className="incoming__point-name">{ride?.pickup || "Pickup Location"}</div>
+              <div className="incoming__point-name">
+                {ride?.pickup || "Pickup Location"}
+              </div>
             </div>
           </div>
           <div className="incoming__point">
             <div className="incoming__dot incoming__dot--drop">B</div>
             <div>
               <div className="incoming__point-label">Drop</div>
-              <div className="incoming__point-name">{ride?.destination || "Destination"}</div>
+              <div className="incoming__point-name">
+                {ride?.destination || "Destination"}
+              </div>
             </div>
           </div>
         </div>
@@ -62,9 +77,15 @@ export default function IncomingRide() {
           </div>
           <div className="incoming__meta-item">
             <div className="incoming__meta-val">
-              {ride?.vehicleType === "BIKE" ? "🏍️" : ride?.vehicleType === "AUTO" ? "🛺" : "🚗"}
+              {ride?.vehicleType === "BIKE"
+                ? "🏍️"
+                : ride?.vehicleType === "AUTO"
+                  ? "🛺"
+                  : "🚗"}
             </div>
-            <div className="incoming__meta-key">{ride?.vehicleType || "Vehicle"}</div>
+            <div className="incoming__meta-key">
+              {ride?.vehicleType || "Vehicle"}
+            </div>
           </div>
           <div className="incoming__meta-item">
             <div className="incoming__meta-val">{ride?.otp || "—"}</div>
@@ -74,7 +95,11 @@ export default function IncomingRide() {
 
         {/* Actions */}
         <div className="incoming__actions">
-          <button className="incoming__accept" onClick={acceptRide} disabled={loading}>
+          <button
+            className="incoming__accept"
+            onClick={acceptRide}
+            disabled={loading}
+          >
             {loading ? "..." : "✓ Accept"}
           </button>
           <button className="incoming__reject" onClick={rejectRide}>

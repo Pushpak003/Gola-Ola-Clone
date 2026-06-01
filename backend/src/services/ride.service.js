@@ -88,7 +88,7 @@ export const createRideService = async ({
       });
       console.log("Ride timed out:", ride.id);
     }
-  }, 15000);
+  }, 60000);
 
   const nearbyDrivers = getNearbyDrivers({
     lat: pickupLat,

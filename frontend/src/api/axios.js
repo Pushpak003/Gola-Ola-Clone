@@ -19,7 +19,7 @@ if (API && API.interceptors) {
         config.url?.includes(route)
       );
 
-      if (!isPublic) {
+      if (!isPublic && !config.headers.Authorization) {
         const role = localStorage.getItem("role");
         const token = role === "captain"
           ? localStorage.getItem("captainToken")
@@ -29,10 +29,6 @@ if (API && API.interceptors) {
           config.headers.Authorization = `Bearer ${token}`;
         }
       }
-
-      // Remove these console.logs in production
-      console.log("Request URL =>", config.url);
-      console.log("Is Public =>", isPublic);
 
       return config;
     },

@@ -37,6 +37,7 @@ const UserLogin = () => {
     try {
       const response = await API.post("/auth/verify-otp", { phone: phoneNumber, otp });
       if (response.data.token) {
+        localStorage.clear();
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("role", "user");
         socket.connect();

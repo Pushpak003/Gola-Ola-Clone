@@ -23,12 +23,16 @@ export default function CompleteProfile() {
     if (!vehicleNumber.trim()) return setError("Enter vehicle number");
     setError(""); setLoading(true);
     try {
-      await api.post("/captain/complete-profile", {
+    const res =  await api.post("/captain/complete-profile", {
         fullname,
         phone,
         vehicleType,
         vehicleNumber,
       });
+    localStorage.setItem("captainToken", res.data.token);
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("role", "captain");
+    localStorage.removeItem("captainPhone");
       navigate("/captain/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to save profile. Try again.");
