@@ -1,9 +1,8 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "../user/Login";
+
+import { Routes, Route, Navigate } from "react-router-dom";import Login from "../user/Login";
 import Home from "../user/Home";
 import Landing from "../pages/Landing";
-import CaptainLogin from "../captain/Captainlogin";
+import CaptainLogin from "../captain/CaptainLogin";
 import Dashboard from "../captain/Dashboard";
 import VehicleSelection from "../user/vehicleSelection";
 import SearchingRide from "../user/SearchingRide";
@@ -11,7 +10,7 @@ import UserLiveRide from "../user/LiveRide";
 import UserHistory from "../user/History";
 import IncomingRide from "../captain/IncomingRide";
 import CompleteProfile from "../captain/CompleteProfile";
-import CaptainLiveRide from "../captain/captainliveride";
+import CaptainLiveRide from "../captain/LiveRide";
 import CaptainHistory from "../captain/Captainhistory";
 
 const UserRoute = ({ children }) => {
