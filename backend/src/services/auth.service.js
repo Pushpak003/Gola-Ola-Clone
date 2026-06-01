@@ -1,6 +1,6 @@
 import prisma from "../config/db.js";
 import { generateOTP } from "../utils/generateOTP.js";
-
+import {sendSMS} from "../services/sms.service.js";
 export const sendOTPService = async (phone) => {
 
   const otp = generateOTP();
@@ -16,6 +16,7 @@ export const sendOTPService = async (phone) => {
     },
   });
 
+  await sendSMS(phone, otp);
   console.log("OTP:", otp);
 
   return otp;

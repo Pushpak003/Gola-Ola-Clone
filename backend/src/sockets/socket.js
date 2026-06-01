@@ -7,9 +7,7 @@ import { onlineUsers } from "./onlineUsers.js";
 let io;
 export const initSocket = (server) => {
   io = new Server(server, {
-    cors: {
-      origin: "*",
-    },
+    cors: { origin: "*" },
   });
 
   io.on("connection", (socket) => {
@@ -20,27 +18,19 @@ export const initSocket = (server) => {
       try {
         const { token, lat, lng } = data;
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const captain = await prisma.captain.findUnique({
-          where: {
-            id: decoded.id,
-          },
-        });
+        const captain = await prisma.captain.findUnique({ where: { id: decoded.id } });
         if (!captain) return;
 
         onlineDrivers.set(captain.id, {
           socketId: socket.id,
-
           lat,
           lng,
-
           vehicleType: captain.vehicleType,
           isAvailable: true,
         });
-        console.log("Online Drivers:");
-
-        console.log(onlineDrivers);
+        console.log("Captain online:", captain.id);
       } catch (error) {
-        console.log(error);
+        console.log("captain-online error:", error.message);
       }
     });
 
@@ -48,78 +38,51 @@ export const initSocket = (server) => {
     socket.on("user-online", async (data) => {
       try {
         const { token } = data;
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        const user = await prisma.user.findUnique({
-          where: {
-            id: decoded.id,
-          },
-        });
-
+        const user = await prisma.user.findUnique({ where: { id: decoded.id } });
         if (!user) return;
 
         onlineUsers.set(user.id, socket.id);
-
-        console.log("Online Users:");
-        console.log(onlineUsers);
+        console.log("User online:", user.id);
       } catch (error) {
-        console.log(error);
+        console.log("user-online error:", error.message);
       }
     });
-    socket.on("captain-location", async (data) => {
-      console.log("LOCATION RECEIVED", data);
 
+    // CAPTAIN LOCATION UPDATE
+    socket.on("captain-location", async (data) => {
       try {
         const { rideId, lat, lng } = data;
 
-        const ride = await prisma.ride.findUnique({
-          where: {
-            id: rideId,
-          },
-        });
+        // FIX: Guard against null rideId — captain is online but no active ride yet
+        if (!rideId) return;
 
-        if (!ride) {
-          return;
-        }
+        const ride = await prisma.ride.findUnique({ where: { id: rideId } });
+        if (!ride) return;
 
         const userSocketId = onlineUsers.get(ride.userId);
-        console.log({
-          rideUserId: ride.userId,
-          userSocketId,
-        });
+        if (!userSocketId) return;
 
-        if (!userSocketId) {
-          return;
-        }
-
-        io.to(userSocketId).emit("captain-location-update", {
-          rideId,
-          lat,
-          lng,
-        });
+        io.to(userSocketId).emit("captain-location-update", { rideId, lat, lng });
       } catch (error) {
-        console.log(error);
+        console.log("captain-location error:", error.message);
       }
     });
-    // DISCONNECT
 
+    // DISCONNECT
     socket.on("disconnect", () => {
-      // driver cleanup
       for (const [captainId, driverData] of onlineDrivers) {
         if (driverData.socketId === socket.id) {
           onlineDrivers.delete(captainId);
           break;
         }
       }
-      // user cleanup
       for (const [userId, socketId] of onlineUsers) {
         if (socketId === socket.id) {
           onlineUsers.delete(userId);
           break;
         }
       }
-
       console.log("Socket disconnected:", socket.id);
     });
   });
