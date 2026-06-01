@@ -4,25 +4,48 @@ import { generateRideOTP } from "../utils/generateRideOTP.js";
 import { getNearbyDrivers } from "../utils/getNearbyDrivers.js";
 import { onlineUsers } from "../sockets/onlineUsers.js";
 import { onlineDrivers } from "../sockets/onlineDrivers.js";
+import { sendSMS } from "./sms.service.js";
 import { getIo } from "../sockets/socket.js";
+
 import prisma from "../config/db.js";
 
-export const getFareService = async (pickupLng, pickupLat, destinationLng, destinationLat) => {
-  const routeData = await getDistanceService(pickupLng, pickupLat, destinationLng, destinationLat);
+export const getFareService = async (
+  pickupLng,
+  pickupLat,
+  destinationLng,
+  destinationLat,
+) => {
+  const routeData = await getDistanceService(
+    pickupLng,
+    pickupLat,
+    destinationLng,
+    destinationLat,
+  );
   const fares = calculateFare(routeData.distance);
   return { distance: routeData.distance, duration: routeData.duration, fares };
 };
 
 export const createRideService = async ({
-  userId, pickup, destination,
-  pickupLat, pickupLng, destinationLat, destinationLng, vehicleType,
+  userId,
+  pickup,
+  destination,
+  pickupLat,
+  pickupLng,
+  destinationLat,
+  destinationLng,
+  vehicleType,
 }) => {
   const activeRide = await prisma.ride.findFirst({
     where: { userId, status: { in: ["SEARCHING", "ACCEPTED", "STARTED"] } },
   });
   if (activeRide) throw new Error("You already have an active ride");
 
-  const routeData = await getDistanceService(pickupLng, pickupLat, destinationLng, destinationLat);
+  const routeData = await getDistanceService(
+    pickupLng,
+    pickupLat,
+    destinationLng,
+    destinationLat,
+  );
   const fares = calculateFare(routeData.distance);
   const fare = fares[vehicleType];
   if (!fare) throw new Error("Invalid vehicle type");
@@ -30,25 +53,48 @@ export const createRideService = async ({
   const otp = generateRideOTP();
   const ride = await prisma.ride.create({
     data: {
-      userId, pickup, destination,
-      pickupLat, pickupLng, destinationLat, destinationLng,
+      userId,
+      pickup,
+      destination,
+      pickupLat,
+      pickupLng,
+      destinationLat,
+      destinationLng,
       distance: routeData.distance,
       duration: Math.ceil(routeData.duration),
-      fare, vehicleType, otp,
+      fare,
+      vehicleType,
+      otp,
       status: "SEARCHING",
     },
   });
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  await sendSMS(user.phone, otp);
+
+  console.log("RIDE OTP SENT =>", otp);
 
   // Auto-cancel if no captain accepts in 15s
   setTimeout(async () => {
     const current = await prisma.ride.findUnique({ where: { id: ride.id } });
     if (current && current.status === "SEARCHING") {
-      await prisma.ride.update({ where: { id: ride.id }, data: { status: "CANCELLED" } });
+      await prisma.ride.update({
+        where: { id: ride.id },
+        data: { status: "CANCELLED" },
+      });
       console.log("Ride timed out:", ride.id);
     }
   }, 15000);
 
-  const nearbyDrivers = getNearbyDrivers({ lat: pickupLat, lng: pickupLng, vehicleType });
+  const nearbyDrivers = getNearbyDrivers({
+    lat: pickupLat,
+    lng: pickupLng,
+    vehicleType,
+  });
   const io = getIo();
   for (const driver of nearbyDrivers) {
     io.to(driver.socketId).emit("new-ride", ride);
