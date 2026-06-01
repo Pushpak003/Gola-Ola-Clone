@@ -40,6 +40,7 @@ export const verifyCaptainOTP = async (req, res) => {
 
     const token = generateToken({
       id: captain.id,
+      role: "CAPTAIN",
     });
 
     res.status(200).json({
@@ -69,6 +70,7 @@ export const completeCaptainProfile = async (req, res) => {
 
     const token = generateToken({
       id: captain.id,
+      role: "CAPTAIN",
     });
 
     res.status(201).json({

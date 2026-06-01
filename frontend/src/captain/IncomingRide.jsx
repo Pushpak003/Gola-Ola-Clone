@@ -20,11 +20,6 @@ export default function IncomingRide() {
       await api.post(
         "/ride/accept",
         { rideId: ride?.id },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("captainToken")}`,
-          },
-        },
       );
       navigate("/captain/live-ride", { state: { ride: res.data.ride } });
     } catch (err) {
