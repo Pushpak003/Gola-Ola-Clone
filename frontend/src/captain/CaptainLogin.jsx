@@ -34,7 +34,7 @@ export default function CaptainLogin() {
     setLoading(true);
     try {
       const response = await api.post("/captain/verify-otp", { phone, otp });
-      const { token, captain, onboardingRequired, phone: serverPhone } = response.data;
+      const { token, onboardingRequired, phone } = response.data;
 
       if (onboardingRequired) {
         localStorage.setItem("captainPhone", phone);
