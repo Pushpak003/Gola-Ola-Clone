@@ -22,8 +22,8 @@ if (API && API.interceptors) {
       if (!isPublic) {
         const role = localStorage.getItem("role");
         const token = role === "captain"
-          localStorage.getItem("token") ||
-          localStorage.getItem("captainToken");
+          ? localStorage.getItem("captainToken")
+          : localStorage.getItem("token");
 
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
