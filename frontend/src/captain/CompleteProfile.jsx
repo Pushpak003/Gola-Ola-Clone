@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { useNavigate, useLocation } from "react-router-dom";
+import { captainAPI } from "../api/axios";
 import "./Captain.css";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
-  const phone = localStorage.getItem("captainPhone");
+  const { state } = useLocation();
+  // onboardToken comes from CaptainLogin navigate state after OTP verification
+  const onboardToken = state?.onboardToken;
+
   const [fullname, setFullname] = useState("");
   const [vehicleType, setVehicleType] = useState("BIKE");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -16,23 +19,39 @@ export default function CompleteProfile() {
     { id: "BIKE", icon: "🏍️", name: "Bike" },
     { id: "AUTO", icon: "🛺", name: "Auto" },
     { id: "MINI", icon: "🚗", name: "Mini" },
+    { id: "SEDAN", icon: "🚙", name: "Sedan" },
+    { id: "SUV", icon: "🚐", name: "SUV" },
   ];
+
+  if (!onboardToken) {
+    return (
+      <div className="profile">
+        <div className="profile__header"><div className="profile__logo">GOLA</div></div>
+        <div className="profile__body">
+          <p style={{ color: "var(--red)", fontWeight: 600 }}>
+            ⚠️ Session invalid. Please verify your OTP again.
+          </p>
+          <button className="profile__submit" onClick={() => navigate("/captain/login")}>
+            ← Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!fullname.trim()) return setError("Enter your full name");
     if (!vehicleNumber.trim()) return setError("Enter vehicle number");
     setError(""); setLoading(true);
     try {
-    const res =  await api.post("/captain/complete-profile", {
-        fullname,
-        phone,
-        vehicleType,
-        vehicleNumber,
-      });
-    localStorage.setItem("captainToken", res.data.token);
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("role", "captain");
-    localStorage.removeItem("captainPhone");
+      const res = await captainAPI.post(
+        "/captain/complete-profile",
+        { fullname, vehicleType, vehicleNumber },
+        { headers: { Authorization: `Bearer ${onboardToken}` } }
+      );
+      // Only set captain-specific keys
+      localStorage.setItem("captainToken", res.data.token);
+      localStorage.setItem("captainRole", "captain");
       navigate("/captain/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to save profile. Try again.");

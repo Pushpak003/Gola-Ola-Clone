@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { socket } from "../sockets/socket.js";
-import api from "../api/axios";
+import { captainAPI as api } from "../api/axios";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import "../user/Ride.css";
@@ -23,18 +23,17 @@ export default function CaptainLiveRide() {
   const [otpInput, setOtpInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState(null); // 'PENDING' | 'PAID' | null
 
   // Send captain location periodically
   useEffect(() => {
     if (rideStatus !== "ACCEPTED" && rideStatus !== "STARTED") return;
-
     const interval = setInterval(() => {
       if (!socket.connected) return;
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
           socket.emit("captain-location", { rideId: ride?.id, lat, lng });
-
           if (mapRef.current && selfMarkerRef.current) {
             selfMarkerRef.current.setLngLat([lng, lat]);
           }
@@ -43,14 +42,12 @@ export default function CaptainLiveRide() {
         { enableHighAccuracy: true, maximumAge: 5000 }
       );
     }, 5000);
-
     return () => clearInterval(interval);
   }, [rideStatus, ride?.id]);
 
   // Init map
   useEffect(() => {
     if (!mapContainerRef.current || !ride) return;
-
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
@@ -58,7 +55,6 @@ export default function CaptainLiveRide() {
       zoom: 13,
     });
 
-    // Pickup marker
     if (ride.pickupLat && ride.pickupLng) {
       const el = document.createElement("div");
       el.className = "ride-marker ride-marker--pickup";
@@ -68,7 +64,6 @@ export default function CaptainLiveRide() {
         .addTo(map);
     }
 
-    // Drop marker
     if (ride.destinationLat && ride.destinationLng) {
       const el = document.createElement("div");
       el.className = "ride-marker ride-marker--drop";
@@ -78,7 +73,6 @@ export default function CaptainLiveRide() {
         .addTo(map);
     }
 
-    // Self marker (captain)
     navigator.geolocation.getCurrentPosition((pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
       const el = document.createElement("div");
@@ -89,7 +83,6 @@ export default function CaptainLiveRide() {
         .addTo(map);
     });
 
-    // Draw route
     map.on("load", () => {
       if (ride.pickupLng && ride.destinationLng) {
         fetch(
@@ -99,21 +92,13 @@ export default function CaptainLiveRide() {
           .then((data) => {
             const route = data.routes?.[0]?.geometry;
             if (!route) return;
-            map.addSource("route", {
-              type: "geojson",
-              data: { type: "Feature", geometry: route },
-            });
+            map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: route } });
             map.addLayer({
               id: "route",
               type: "line",
               source: "route",
-              paint: {
-                "line-color": "#0a0a0a",
-                "line-width": 4,
-                "line-opacity": 0.7,
-              },
+              paint: { "line-color": "#0a0a0a", "line-width": 4, "line-opacity": 0.7 },
             });
-
             const bounds = new mapboxgl.LngLatBounds()
               .extend([ride.pickupLng, ride.pickupLat])
               .extend([ride.destinationLng, ride.destinationLat]);
@@ -126,12 +111,30 @@ export default function CaptainLiveRide() {
     return () => map.remove();
   }, [ride]);
 
-  // Socket: ride events
+  // Socket: ride events + payment-received
   useEffect(() => {
-    const onCompleted = () => setRideStatus("COMPLETED");
-    socket.on("ride-completed", onCompleted);
-    return () => socket.off("ride-completed", onCompleted);
+    const onPaymentReceived = ({ amount }) => {
+      setPaymentStatus("PAID");
+    };
+    socket.on("payment-received", onPaymentReceived);
+    return () => socket.off("payment-received", onPaymentReceived);
   }, []);
+
+  // Poll payment status after ride completed
+  useEffect(() => {
+    if (rideStatus !== "COMPLETED" || !ride?.id) return;
+    setPaymentStatus("PENDING");
+    const poll = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/payment/status/${ride.id}`);
+        if (data.payment?.status === "PAID") {
+          setPaymentStatus("PAID");
+          clearInterval(poll);
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [rideStatus, ride?.id]);
 
   const startRide = async () => {
     if (!otpInput) return setError("Enter the OTP");
@@ -152,7 +155,7 @@ export default function CaptainLiveRide() {
     setError("");
     try {
       await api.post("/ride/complete", { rideId: ride.id });
-      navigate("/captain/dashboard", { replace: true });
+      setRideStatus("COMPLETED");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to complete ride");
     } finally {
@@ -163,9 +166,7 @@ export default function CaptainLiveRide() {
   if (!ride) {
     return (
       <div className="clive">
-        <div className="clive__header">
-          <span className="clive__logo">GOLA</span>
-        </div>
+        <div className="clive__header"><span className="clive__logo">GOLA</span></div>
         <div className="clive__body" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           <p>No ride data available.</p>
         </div>
@@ -173,8 +174,45 @@ export default function CaptainLiveRide() {
     );
   }
 
-  const vehicleEmoji =
-    ride.vehicleType === "BIKE" ? "🏍️" : ride.vehicleType === "AUTO" ? "🛺" : "🚗";
+  // Ride completed — show payment status
+  if (rideStatus === "COMPLETED") {
+    return (
+      <div className="liveride liveride--done">
+        <div className="liveride__done-icon">{paymentStatus === "PAID" ? "✅" : "⏳"}</div>
+        <h1 className="liveride__done-title">
+          {paymentStatus === "PAID" ? "Payment Received!" : "Waiting for Payment"}
+        </h1>
+        <p className="liveride__done-sub">
+          {paymentStatus === "PAID"
+            ? "Passenger has completed the payment online."
+            : "Waiting for passenger to complete payment..."}
+        </p>
+        <div className="liveride__done-fare">
+          <span className="liveride__done-fare-label">Ride Fare</span>
+          <span className="liveride__done-fare-val">₹{Math.round(ride.fare)}</span>
+        </div>
+        {paymentStatus === "PAID" ? (
+          <button className="liveride__home-btn" onClick={() => navigate("/captain/dashboard", { replace: true })}>
+            Back to Dashboard →
+          </button>
+        ) : (
+          <>
+            <p style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
+              {paymentStatus === "PENDING" ? "Checking payment status..." : ""}
+            </p>
+            <button
+              style={{ background: "transparent", border: "none", color: "#666", fontSize: 14, cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => navigate("/captain/dashboard", { replace: true })}
+            >
+              Continue to dashboard (Cash collected)
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  const vehicleEmoji = ride.vehicleType === "BIKE" ? "🏍️" : ride.vehicleType === "AUTO" ? "🛺" : "🚗";
 
   return (
     <div className="clive">
@@ -183,11 +221,7 @@ export default function CaptainLiveRide() {
       <div className="clive__topbar">
         <span className="clive__logo">GOLA</span>
         <span className="clive__tag">
-          {rideStatus === "ACCEPTED"
-            ? "⏳ Heading to pickup"
-            : rideStatus === "STARTED"
-              ? "🚀 On ride"
-              : "✅ Completed"}
+          {rideStatus === "ACCEPTED" ? "⏳ Heading to pickup" : "🚀 On ride"}
         </span>
       </div>
 
@@ -225,9 +259,7 @@ export default function CaptainLiveRide() {
 
         {rideStatus === "ACCEPTED" && (
           <div className="clive__otp-section">
-            <span className="clive__otp-hint">
-              Ask the user for this OTP to start the ride
-            </span>
+            <span className="clive__otp-hint">Ask the user for their OTP to start the ride</span>
             <input
               className="clive__otp-input"
               type="text"
@@ -237,22 +269,14 @@ export default function CaptainLiveRide() {
               value={otpInput}
               onChange={(e) => setOtpInput(e.target.value)}
             />
-            <button
-              className="clive__start-btn"
-              onClick={startRide}
-              disabled={actionLoading}
-            >
+            <button className="clive__start-btn" onClick={startRide} disabled={actionLoading}>
               {actionLoading ? "..." : "✓ Start Ride"}
             </button>
           </div>
         )}
 
         {rideStatus === "STARTED" && (
-          <button
-            className="clive__complete-btn"
-            onClick={completeRide}
-            disabled={actionLoading}
-          >
+          <button className="clive__complete-btn" onClick={completeRide} disabled={actionLoading}>
             {actionLoading ? "..." : "✓ Complete Ride"}
           </button>
         )}

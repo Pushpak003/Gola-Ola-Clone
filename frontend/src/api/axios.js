@@ -1,39 +1,36 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
-  timeout: 10000,
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+// ── User axios instance ─────────────────────────────────────────────────────
+// Uses "token" key only. Never touches captainToken.
+export const userAPI = axios.create({ baseURL: BASE_URL, timeout: 10000 });
+
+const USER_PUBLIC = ["/auth/send-otp", "/auth/verify-otp"];
+
+userAPI.interceptors.request.use((config) => {
+  const isPublic = USER_PUBLIC.some((r) => config.url?.includes(r));
+  if (!isPublic && !config.headers.Authorization) {
+    const token = localStorage.getItem("token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
-const PUBLIC_ROUTES = [
-  "/auth/send-otp",
-  "/auth/verify-otp",
-  "/captain/send-otp",
-  "/captain/verify-otp",
-];
+// ── Captain axios instance ──────────────────────────────────────────────────
+// Uses "captainToken" key only. Never touches token.
+export const captainAPI = axios.create({ baseURL: BASE_URL, timeout: 10000 });
 
-if (API && API.interceptors) {
-  API.interceptors.request.use(
-    (config) => {
-      const isPublic = PUBLIC_ROUTES.some((route) =>
-        config.url?.includes(route)
-      );
+const CAPTAIN_PUBLIC = ["/captain/send-otp", "/captain/verify-otp", "/captain/complete-profile"];
 
-      if (!isPublic && !config.headers.Authorization) {
-        const role = localStorage.getItem("role");
-        const token = role === "captain"
-          ? localStorage.getItem("captainToken")
-          : localStorage.getItem("token");
+captainAPI.interceptors.request.use((config) => {
+  const isPublic = CAPTAIN_PUBLIC.some((r) => config.url?.includes(r));
+  if (!isPublic && !config.headers.Authorization) {
+    const token = localStorage.getItem("captainToken");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      }
-
-      return config;
-    },
-    (error) => Promise.reject(error)
-  );
-}
-
-export default API;
+// ── Default export = userAPI (backward-compat for any user pages using `api`)
+export default userAPI;

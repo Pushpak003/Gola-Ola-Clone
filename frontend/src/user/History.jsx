@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { userAPI as api } from "../api/axios";
 import "./History.css";
 
 const statusColor = { COMPLETED: "green", CANCELLED: "red", SEARCHING: "yellow", ACCEPTED: "blue", STARTED: "blue" };

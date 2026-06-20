@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { userAPI as api } from "../api/axios";
 import "./VehicleSelection.css";
 
 const RIDE_OPTIONS = [

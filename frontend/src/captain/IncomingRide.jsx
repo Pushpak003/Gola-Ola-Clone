@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { captainAPI as api } from "../api/axios";
 import { useState } from "react";
 import "./Captain.css";
 

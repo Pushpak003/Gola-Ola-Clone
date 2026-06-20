@@ -19,7 +19,6 @@ export default function LiveRide() {
 
   const [rideStatus, setRideStatus] = useState("ACCEPTED");
   const [captainCoords, setCaptainCoords] = useState(null);
-  const [rating, setRating] = useState(0);
 
   // Init map
   useEffect(() => {
@@ -31,7 +30,6 @@ export default function LiveRide() {
       zoom: 13,
     });
 
-    // Pickup marker (green)
     if (state?.pickupLat && state?.pickupLng) {
       const el = document.createElement("div");
       el.className = "ride-marker ride-marker--pickup";
@@ -41,7 +39,6 @@ export default function LiveRide() {
         .addTo(map);
     }
 
-    // Drop marker (red)
     if (state?.destinationLat && state?.destinationLng) {
       const el = document.createElement("div");
       el.className = "ride-marker ride-marker--drop";
@@ -51,14 +48,13 @@ export default function LiveRide() {
         .addTo(map);
     }
 
-    // Draw pickup→destination route
     map.on("load", () => {
       if (state?.pickupLng && state?.destinationLng) {
         fetch(
           `https://api.mapbox.com/directions/v5/mapbox/driving/${state.pickupLng},${state.pickupLat};${state.destinationLng},${state.destinationLat}?geometries=geojson&access_token=${mapboxgl.accessToken}`
         )
-          .then(r => r.json())
-          .then(data => {
+          .then((r) => r.json())
+          .then((data) => {
             const route = data.routes?.[0]?.geometry;
             if (!route) return;
             map.addSource("route", { type: "geojson", data: { type: "Feature", geometry: route } });
@@ -68,8 +64,6 @@ export default function LiveRide() {
               source: "route",
               paint: { "line-color": "#0a0a0a", "line-width": 4, "line-opacity": 0.7 },
             });
-
-            // Fit both markers
             const bounds = new mapboxgl.LngLatBounds()
               .extend([state.pickupLng, state.pickupLat])
               .extend([state.destinationLng, state.destinationLat]);
@@ -82,12 +76,11 @@ export default function LiveRide() {
     return () => map.remove();
   }, []);
 
-  // Socket: captain location + ride events
+  // Socket events
   useEffect(() => {
     const onLocation = ({ lat, lng }) => {
       setCaptainCoords({ lat, lng });
       if (!mapRef.current) return;
-
       if (captainMarkerRef.current) {
         captainMarkerRef.current.setLngLat([lng, lat]);
       } else {
@@ -100,54 +93,40 @@ export default function LiveRide() {
       }
     };
 
-    const onCompleted = () => setRideStatus("COMPLETED");
+    const onStarted = () => setRideStatus("STARTED");
+
+    const onCompleted = (ride) => {
+      // Navigate to payment page after ride completes
+      navigate("/user/payment", {
+        state: {
+          ride: {
+            id: state?.rideId,
+            pickup: state?.pickup,
+            destination: state?.destination,
+            fare: state?.fare,
+            vehicleType: state?.vehicleType,
+            ...ride,
+          },
+        },
+      });
+    };
 
     socket.on("captain-location-update", onLocation);
+    socket.on("ride-started", onStarted);
     socket.on("ride-completed", onCompleted);
     return () => {
       socket.off("captain-location-update", onLocation);
+      socket.off("ride-started", onStarted);
       socket.off("ride-completed", onCompleted);
     };
-  }, [state?.vehicleType]);
-
-  // Ride completed screen
-  if (rideStatus === "COMPLETED") {
-    return (
-      <div className="liveride liveride--done">
-        <div className="liveride__done-icon">🎉</div>
-        <h1 className="liveride__done-title">Ride Complete!</h1>
-        <p className="liveride__done-sub">Hope you had a great trip with Gola.</p>
-        <div className="liveride__done-fare">
-          <span className="liveride__done-fare-label">Total Paid</span>
-          <span className="liveride__done-fare-val">₹{state?.fare ? Math.round(state.fare) : "—"}</span>
-        </div>
-        <div className="liveride__done-rating">
-          <p className="liveride__done-rating-label">Rate your ride</p>
-          <div className="liveride__stars">
-            {[1,2,3,4,5].map(s => (
-              <span
-                key={s}
-                className={`liveride__star ${s <= rating ? "liveride__star--on" : ""}`}
-                onClick={() => setRating(s)}
-              >★</span>
-            ))}
-          </div>
-        </div>
-        <button className="liveride__home-btn" onClick={() => navigate("/home")}>
-          Back to Home →
-        </button>
-      </div>
-    );
-  }
+  }, [state, navigate]);
 
   const vehicleEmoji = state?.vehicleType === "BIKE" ? "🏍️" : state?.vehicleType === "AUTO" ? "🛺" : "🚗";
 
   return (
     <div className="liveride">
-      {/* Map takes full screen */}
       <div ref={mapContainerRef} className="liveride__map" />
 
-      {/* Top overlay */}
       <div className="liveride__topbar">
         <span className="liveride__logo">GOLA</span>
         <span className="liveride__tag">
@@ -155,25 +134,20 @@ export default function LiveRide() {
         </span>
       </div>
 
-      {/* Bottom info sheet */}
       <div className="liveride__sheet">
         <div className="liveride__sheet-handle" />
 
-        {/* Captain row */}
         <div className="liveride__captain-row">
           <div className="liveride__captain-ava">{vehicleEmoji}</div>
           <div className="liveride__captain-info">
             <div className="liveride__captain-name">Your Captain</div>
             <div className="liveride__captain-loc">
-              {captainCoords
-                ? `📍 Updating location...`
-                : "Heading towards you..."}
+              {captainCoords ? "📍 Updating location..." : "Heading towards you..."}
             </div>
           </div>
           <div className="liveride__fare">₹{state?.fare ? Math.round(state.fare) : "—"}</div>
         </div>
 
-        {/* OTP — show only before ride starts */}
         {rideStatus === "ACCEPTED" && (
           <div className="liveride__otp-box">
             <span className="liveride__otp-label">Your OTP</span>
@@ -182,7 +156,6 @@ export default function LiveRide() {
           </div>
         )}
 
-        {/* Route */}
         <div className="liveride__route-row">
           <div className="liveride__rpoint">
             <span className="liveride__rdot liveride__rdot--g" />

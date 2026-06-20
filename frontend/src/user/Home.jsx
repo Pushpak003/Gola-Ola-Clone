@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { userAPI as api } from "../api/axios";
 import { socket } from "../sockets/socket.js";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -192,7 +192,7 @@ export default function Home() {
   const handleLogout = () => {
     socket.disconnect();
     localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    localStorage.removeItem("userRole");
     navigate("/login");
   };
 

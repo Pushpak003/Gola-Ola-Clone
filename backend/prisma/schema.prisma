@@ -29,80 +29,85 @@ enum RideStatus {
   CANCELLED
 }
 
-model User {
-  id          String   @id @default(uuid())
-
-  fullname    String?
-
-  phone       String   @unique
-
-  rides       Ride[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
+
+enum PaymentMethod {
+  RAZORPAY
+  CASH
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullname  String?
+  phone     String   @unique
+  rides     Ride[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Captain {
-  id              String       @id @default(uuid())
-
-  fullname        String
-
-  phone           String       @unique
-
-  vehicleType     VehicleType
-
-  vehicleNumber   String       @unique
-
-  isOnline        Boolean      @default(false)
-
-  currentLat      Float?
-  currentLng      Float?
-
-  rides           Ride[]
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String      @id @default(uuid())
+  fullname      String
+  phone         String      @unique
+  vehicleType   VehicleType
+  vehicleNumber String      @unique
+  isOnline      Boolean     @default(false)
+  currentLat    Float?
+  currentLng    Float?
+  rides         Ride[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model Ride {
-  id                 String       @id @default(uuid())
-
-  userId             String
-  captainId          String?
-
-  user               User         @relation(fields: [userId], references: [id])
-  captain            Captain?     @relation(fields: [captainId], references: [id])
-
-  pickup             String
-  destination        String
-
-  pickupLat          Float
-  pickupLng          Float
-
-  destinationLat     Float
-  destinationLng     Float
-
-  distance           Float
-  duration           Int
-
-  fare               Float
-
-  vehicleType        VehicleType
-
-  status             RideStatus   @default(SEARCHING)
-
-  otp                String?
-
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  id             String        @id @default(uuid())
+  userId         String
+  captainId      String?
+  user           User          @relation(fields: [userId], references: [id])
+  captain        Captain?      @relation(fields: [captainId], references: [id])
+  pickup         String
+  destination    String
+  pickupLat      Float
+  pickupLng      Float
+  destinationLat Float
+  destinationLng Float
+  distance       Float
+  duration       Int
+  fare           Float
+  vehicleType    VehicleType
+  status         RideStatus    @default(SEARCHING)
+  otp            String?
+  payment        Payment?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
+
+model Payment {
+  id                String        @id @default(uuid())
+  rideId            String        @unique
+  ride              Ride          @relation(fields: [rideId], references: [id])
+  amount            Float
+  currency          String        @default("INR")
+  method            PaymentMethod @default(RAZORPAY)
+  status            PaymentStatus @default(PENDING)
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  razorpaySignature String?
+  failureReason     String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
 model OTP {
-  id          String   @id @default(uuid())
-
-  phone       String
-
-  code        String
-
-  expiresAt   DateTime
-
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid())
+  phone      String
+  code       String
+  expiresAt  DateTime
+  consumed   Boolean  @default(false)   // FIX: prevent OTP replay attacks
+  createdAt  DateTime @default(now())
 }

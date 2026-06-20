@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../sockets/socket";
 import "./Captain.css";
@@ -6,7 +6,6 @@ import "./Captain.css";
 export default function Dashboard() {
   const [isOnline, setIsOnline] = useState(false);
   const navigate = useNavigate();
-  // No location interval here — location is only emitted during an active ride (CaptainLiveRide page)
 
   const goOnline = () => {
     navigator.geolocation.getCurrentPosition(
@@ -17,8 +16,6 @@ export default function Dashboard() {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         });
-        // FIX: do NOT add socket.on("new-ride") here — it's already in useEffect below
-        // Adding it here creates duplicate listeners every time Go Online is clicked
         setIsOnline(true);
       },
       () => alert("Location permission required to go online")
@@ -31,9 +28,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    // Single listener — no duplicates
     const onNewRide = (ride) => {
-      console.log("NEW RIDE =>", ride);
       navigate("/captain/incoming-ride", { state: { ride } });
     };
     socket.on("new-ride", onNewRide);
@@ -42,9 +37,9 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     if (isOnline) socket.disconnect();
+    // Only remove captain keys — never touch user token
     localStorage.removeItem("captainToken");
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    localStorage.removeItem("captainRole");
     navigate("/captain/login");
   };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { userAPI } from "../api/axios";
 import { socket } from "../sockets/socket.js";
 import "./Auth.css";
 
@@ -13,8 +13,9 @@ const UserLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Only check user token — captainToken is completely separate
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("role");
+    const role = localStorage.getItem("userRole");
     if (token && role === "user") navigate("/home");
   }, [navigate]);
 
@@ -23,7 +24,7 @@ const UserLogin = () => {
     if (phoneNumber.length < 10) return setError("Enter a valid 10-digit number");
     setError(""); setLoading(true);
     try {
-      await API.post("/auth/send-otp", { phone: phoneNumber });
+      await userAPI.post("/auth/send-otp", { phone: phoneNumber });
       setIsOtpSent(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
@@ -35,11 +36,11 @@ const UserLogin = () => {
     if (otp.length < 4) return setError("Enter complete OTP");
     setError(""); setLoading(true);
     try {
-      const response = await API.post("/auth/verify-otp", { phone: phoneNumber, otp });
+      const response = await userAPI.post("/auth/verify-otp", { phone: phoneNumber, otp });
       if (response.data.token) {
-        localStorage.clear();
+        // Only set user-specific keys — never touch captainToken
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("role", "user");
+        localStorage.setItem("userRole", "user");
         socket.connect();
         socket.emit("user-online", { token: response.data.token });
         navigate("/home");
@@ -94,8 +95,8 @@ const UserLogin = () => {
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="• • • • • •"
-              maxLength={6}
+              placeholder="• • • •"
+              maxLength={4}
               className="auth__input auth__input--otp"
               required
               autoFocus

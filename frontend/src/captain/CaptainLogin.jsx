@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { captainAPI } from "../api/axios";
 import "../user/Auth.css";
 import "./Captain.css";
 
@@ -12,13 +12,20 @@ export default function CaptainLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    // Only check captainToken — user token is completely separate
+    const token = localStorage.getItem("captainToken");
+    const role = localStorage.getItem("captainRole");
+    if (token && role === "captain") navigate("/captain/dashboard");
+  }, [navigate]);
+
   const sendOTP = async (e) => {
     e.preventDefault();
     if (phone.length < 10) return setError("Enter a valid 10-digit number");
     setError("");
     setLoading(true);
     try {
-      await api.post("/captain/send-otp", { phone });
+      await captainAPI.post("/captain/send-otp", { phone });
       setOtpSent(true);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to send OTP");
@@ -33,19 +40,18 @@ export default function CaptainLogin() {
     setError("");
     setLoading(true);
     try {
-      const response = await api.post("/captain/verify-otp", { phone, otp });
-      const { token, onboardingRequired, phone } = response.data;
+      const response = await captainAPI.post("/captain/verify-otp", { phone, otp });
+      const { token, onboardingRequired, phone: captainPhone } = response.data;
 
       if (onboardingRequired) {
-        localStorage.setItem("captainPhone", phone);
-        navigate("/captain/complete-profile");
+        // onboardToken replaces captainPhone in localStorage — passed via route state
+        navigate("/captain/complete-profile", { state: { onboardToken: response.data.onboardToken } });
         return;
       }
 
-      localStorage.clear();
+      // Only set captain-specific keys — never touch user "token"
       localStorage.setItem("captainToken", token);
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", "captain");
+      localStorage.setItem("captainRole", "captain");
       navigate("/captain/dashboard");
 
     } catch (err) {
@@ -91,11 +97,7 @@ export default function CaptainLogin() {
                 autoFocus
               />
             </div>
-            <button
-              type="submit"
-              className="auth__btn captain-btn"
-              disabled={loading}
-            >
+            <button type="submit" className="auth__btn captain-btn" disabled={loading}>
               {loading ? <span className="auth__spinner" /> : "Send OTP →"}
             </button>
           </form>
@@ -105,24 +107,16 @@ export default function CaptainLogin() {
               type="text"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="• • • • • •"
-              maxLength={6}
+              placeholder="• • • •"
+              maxLength={4}
               className="auth__input auth__input--otp"
               required
               autoFocus
             />
-            <button
-              type="submit"
-              className="auth__btn captain-btn"
-              disabled={loading}
-            >
+            <button type="submit" className="auth__btn captain-btn" disabled={loading}>
               {loading ? <span className="auth__spinner" /> : "Verify & Login"}
             </button>
-            <button
-              type="button"
-              className="auth__link"
-              onClick={() => setOtpSent(false)}
-            >
+            <button type="button" className="auth__link" onClick={() => setOtpSent(false)}>
               ← Change number
             </button>
           </form>
