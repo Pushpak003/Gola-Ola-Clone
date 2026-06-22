@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+
+/* ── Captain App Theme — Dark teal/green, professional driver UI ── */
+:root {
+  --black: #0d1117;
+  --white: #f0f4f8;
+
+  /* Captain brand colours */
+  --cap-primary: #00c896;       /* teal-green */
+  --cap-primary-dark: #00a87d;
+  --cap-primary-light: #e6fff8;
+  --cap-bg: #0d1117;            /* near-black */
+  --cap-surface: #161b22;       /* dark card bg */
+  --cap-surface-2: #21262d;
+  --cap-border: #30363d;
+  --cap-text: #e6edf3;
+  --cap-text-sub: #8b949e;
+  --cap-accent: #f78166;        /* warm coral for alerts */
+
+  --gray-50:  #161b22;
+  --gray-100: #21262d;
+  --gray-200: #30363d;
+  --gray-300: #484f58;
+  --gray-400: #6e7681;
+  --gray-500: #8b949e;
+  --gray-600: #b1bac4;
+  --gray-700: #c9d1d9;
+  --accent: #00c896;
+  --accent-dark: #00a87d;
+  --green: #3fb950;
+  --red: #f85149;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.6);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html { height: 100%; }
+body {
+  height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cap-bg);
+  color: var(--cap-text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+#root { height: 100%; }
+
+h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+button { font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; outline: none; transition: all 0.18s ease; }
+button:active { transform: scale(0.97); }
+input, select, textarea { font-family: 'DM Sans', sans-serif; outline: none; border: none; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--cap-border); border-radius: 4px; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 0.3; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.animate-fade-up { animation: fadeUp 0.4s ease forwards; }
+.animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+.animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.g-spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: var(--cap-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Captain-specific global overrides ─────────────────────────── */
+.auth { background: var(--cap-bg); }
+.auth__body { background: var(--cap-surface); border: 1px solid var(--cap-border); }
+.auth__logo { color: var(--cap-primary); }
+.auth__input { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text); }
+.auth__input:focus { border-color: var(--cap-primary); }
+.auth__prefix { color: var(--cap-text-sub); }
+.auth__field { border-color: var(--cap-border); background: var(--cap-surface-2); }
+.auth__btn.captain-btn { background: var(--cap-primary); color: #000; }
+.auth__btn.captain-btn:hover { background: var(--cap-primary-dark); }
+.auth__link { color: var(--cap-text-sub); }
+.auth__footer { background: transparent; border-color: var(--cap-border); }
+.auth__footer-text { color: var(--cap-text-sub); }
+.auth__switch { color: var(--cap-primary); }
+.auth__error { background: rgba(248,81,73,0.1); border-color: rgba(248,81,73,0.3); }
+.captain-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cap-primary);
+  background: rgba(0,200,150,0.12);
+  border: 1px solid rgba(0,200,150,0.25);
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+/* Captain dashboard dark theme */
+.cdash { background: var(--cap-bg); color: var(--cap-text); }
+.cdash__header { background: var(--cap-surface); border-bottom: 1px solid var(--cap-border); }
+.cdash__logo { color: var(--cap-primary); }
+.cdash__status-pill { background: var(--cap-surface-2); border: 1px solid var(--cap-border); color: var(--cap-text-sub); }
+.cdash__status-dot--online { background: var(--cap-primary); box-shadow: 0 0 8px var(--cap-primary); }
+.cdash__ring { background: var(--cap-surface); border: 2px solid var(--cap-border); color: var(--cap-text); }
+.cdash__ring--online { border-color: var(--cap-primary); background: rgba(0,200,150,0.08); }
+.cdash__ring-pulse { background: rgba(0,200,150,0.2); }
+.cdash__info-title { color: var(--cap-text); }
+.cdash__info-sub { color: var(--cap-text-sub); }
+.cdash__btn--go { background: var(--cap-primary); color: #000; font-weight: 700; }
+.cdash__btn--off { background: var(--cap-surface-2); border: 1.5px solid var(--cap-border); color: var(--red); }
+.cdash__history { color: var(--cap-text-sub); }
+.cdash__logout { color: var(--red); }
+.cdash__footer { border-color: var(--cap-border); }
+
+/* Complete profile dark */
+.profile { background: var(--cap-bg); }
+.profile__header { background: var(--cap-surface); border-bottom: 1px solid var(--cap-border); }
+.profile__logo { color: var(--cap-primary); }
+.profile__title { color: var(--cap-text); }
+.profile__body { background: var(--cap-bg); }
+.profile__label { color: var(--cap-text-sub); }
+.profile__input { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text); }
+.profile__input:focus { border-color: var(--cap-primary); }
+.profile__vehicle-opt { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text); }
+.profile__vehicle-opt--selected { border-color: var(--cap-primary); background: rgba(0,200,150,0.08); }
+.profile__vehicle-name { color: var(--cap-text-sub); }
+.profile__submit { background: var(--cap-primary); color: #000; font-weight: 700; }
+
+/* Incoming ride dark */
+.incoming { background: var(--cap-bg); }
+.incoming__card { background: var(--cap-surface); border-color: var(--cap-border); }
+.incoming__title { color: var(--cap-text); }
+.incoming__badge { color: var(--cap-primary); background: rgba(0,200,150,0.1); }
+.incoming__route { border-color: var(--cap-border); }
+.incoming__addr { color: var(--cap-text); }
+.incoming__label { color: var(--cap-text-sub); }
+.incoming__fare { color: var(--cap-primary); }
+.incoming__accept { background: var(--cap-primary); color: #000; }
+.incoming__decline { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text-sub); }
+
+/* Captain live ride dark */
+.clive__sheet { background: var(--cap-surface); }
+.clive__topbar { background: rgba(13,17,23,0.92); }
+.clive__logo { color: var(--cap-primary); }
+.clive__rname { color: var(--cap-text); }
+.clive__rdot--g { background: var(--cap-primary); }
+.clive__rdot--r { background: var(--red); }
+.clive__meta-val { color: var(--cap-text); }
+.clive__meta-key { color: var(--cap-text-sub); }
+.clive__otp-hint { color: var(--cap-text-sub); }
+.clive__otp-input { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text); }
+.clive__start-btn { background: var(--cap-primary); color: #000; }
+.clive__complete-btn { background: var(--green); color: #000; }
+.clive__error { color: var(--red); }

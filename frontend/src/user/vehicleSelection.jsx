@@ -4,11 +4,11 @@ import { userAPI as api } from "../api/axios";
 import "./VehicleSelection.css";
 
 const RIDE_OPTIONS = [
-  { id: "BIKE",  emoji: "🏍️", name: "Gola Moto",   tag: "Fastest",  tagColor: "green",  seats: 1, eta: "2 min", desc: "Beat city traffic" },
-  { id: "AUTO",  emoji: "🛺",  name: "Gola Auto",   tag: "Budget",   tagColor: "yellow", seats: 3, eta: "3 min", desc: "Affordable, open-air" },
-  { id: "MINI",  emoji: "🚗",  name: "Gola Mini",   tag: "Popular",  tagColor: "gray",   seats: 4, eta: "4 min", desc: "Compact everyday car" },
-  { id: "SEDAN", emoji: "🚙",  name: "Gola Sedan",  tag: "Comfort",  tagColor: "blue",   seats: 4, eta: "5 min", desc: "Spacious & smooth" },
-  { id: "SUV",   emoji: "🚐",  name: "Gola SUV",    tag: "Premium",  tagColor: "purple", seats: 6, eta: "6 min", desc: "For those who travel big" },
+  { id: "BIKE",  emoji: "🏍️", name: "Gola Moto",  tag: "Fastest",  tagColor: "green",  seats: 1, eta: "2 min", desc: "Beat city traffic" },
+  { id: "AUTO",  emoji: "🛺",  name: "Gola Auto",  tag: "Budget",   tagColor: "yellow", seats: 3, eta: "3 min", desc: "Affordable, open-air" },
+  { id: "MINI",  emoji: "🚗",  name: "Gola Mini",  tag: "Popular",  tagColor: "gray",   seats: 4, eta: "4 min", desc: "Compact everyday car" },
+  { id: "SEDAN", emoji: "🚙",  name: "Gola Sedan", tag: "Comfort",  tagColor: "blue",   seats: 4, eta: "5 min", desc: "Spacious & smooth" },
+  { id: "SUV",   emoji: "🚐",  name: "Gola SUV",   tag: "Premium",  tagColor: "purple", seats: 6, eta: "6 min", desc: "For those who travel big" },
 ];
 
 export default function VehicleSelection() {
@@ -20,78 +20,108 @@ export default function VehicleSelection() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!state?.pickupLocation || !state?.destinationLocation) { navigate("/home"); return; }
-    api.get("/ride/fare", {
-      params: {
-        pickupLat: state.pickupLocation.lat,
-        pickupLng: state.pickupLocation.lng,
-        destinationLat: state.destinationLocation.lat,
-        destinationLng: state.destinationLocation.lng,
-      },
-    }).then(({ data }) => {
-      if (data?.success && data?.data?.fares) setFares(data.data.fares);
-      else setError("Could not load fares.");
-    }).catch(() => setError("Failed to fetch fares."));
+    if (!state?.pickupLocation || !state?.destinationLocation) {
+      navigate("/home");
+      return;
+    }
+
+    api
+      .get("/ride/fare", {
+        params: {
+          pickupLat:      state.pickupLocation.lat,
+          pickupLng:      state.pickupLocation.lng,
+          destinationLat: state.destinationLocation.lat,
+          destinationLng: state.destinationLocation.lng,
+        },
+      })
+      .then(({ data }) => {
+        if (data?.success && data?.data?.fares) {
+          setFares(data.data.fares);
+        } else {
+          setError(data?.message || "Could not load fares. Please go back and retry.");
+        }
+      })
+      .catch((err) => {
+        console.error("Fare API error:", err);
+        setError(
+          err.response?.data?.message ||
+          "Failed to fetch fares. Check your network and try again."
+        );
+      });
   }, [state, navigate]);
 
   const handleBook = async () => {
-    if (!selected) return;
+    if (!selected || !fares) return;
     setBooking(true);
     try {
       const { data } = await api.post("/ride/create", {
-        pickup: state.pickupLocation.name,
-        destination: state.destinationLocation.name,
-        pickupLat: Number(state.pickupLocation.lat),
-        pickupLng: Number(state.pickupLocation.lng),
+        pickup:         state.pickupLocation.name,
+        destination:    state.destinationLocation.name,
+        pickupLat:      Number(state.pickupLocation.lat),
+        pickupLng:      Number(state.pickupLocation.lng),
         destinationLat: Number(state.destinationLocation.lat),
         destinationLng: Number(state.destinationLocation.lng),
-        vehicleType: selected,
+        vehicleType:    selected,
       });
+
       if (data?.success) {
         navigate("/user/searching-ride", {
           state: {
-            rideId: data.ride.id,
-            pickup: state.pickupLocation.name,
-            destination: state.destinationLocation.name,
-            pickupLat: state.pickupLocation.lat,
-            pickupLng: state.pickupLocation.lng,
+            rideId:         data.ride.id,
+            pickup:         state.pickupLocation.name,
+            destination:    state.destinationLocation.name,
+            pickupLat:      state.pickupLocation.lat,
+            pickupLng:      state.pickupLocation.lng,
             destinationLat: state.destinationLocation.lat,
             destinationLng: state.destinationLocation.lng,
-            fare: fares[selected],
-            vehicleType: selected,
-            otp: data.ride.otp,
+            fare:           fares[selected],
+            vehicleType:    selected,
+            otp:            data.ride.otp,
           },
         });
+      } else {
+        alert(data?.message || "Booking failed. Please retry.");
       }
     } catch (err) {
-      alert(err.response?.data?.message || "Booking failed.");
-    } finally { setBooking(false); }
+      alert(err.response?.data?.message || "Booking failed. Please retry.");
+    } finally {
+      setBooking(false);
+    }
   };
 
-  if (error) return (
-    <div className="vsel vsel--err">
-      <p>⚠️ {error}</p>
-      <button onClick={() => navigate("/home")}>← Go Back</button>
-    </div>
-  );
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (!error && !fares) {
+    return (
+      <div className="vsel vsel--loading">
+        <div className="vsel__spin" />
+        <p>Calculating fares...</p>
+      </div>
+    );
+  }
 
-  if (!fares) return (
-    <div className="vsel vsel--loading">
-      <div className="vsel__spin" />
-      <p>Calculating fares...</p>
-    </div>
-  );
+  // ── Error ────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="vsel vsel--err">
+        <span style={{ fontSize: 40 }}>⚠️</span>
+        <p style={{ color: "#e53e3e", fontWeight: 600 }}>{error}</p>
+        <button onClick={() => navigate("/home")}>← Go Back</button>
+      </div>
+    );
+  }
 
-  const selectedOption = RIDE_OPTIONS.find(o => o.id === selected);
+  const selectedOption = RIDE_OPTIONS.find((o) => o.id === selected);
 
   return (
     <div className="vsel">
+      {/* Header */}
       <div className="vsel__header">
         <button className="vsel__back" onClick={() => navigate("/home")}>←</button>
         <span className="vsel__title">Choose a ride</span>
         <div style={{ width: 38 }} />
       </div>
 
+      {/* Route summary */}
       <div className="vsel__route">
         <div className="vsel__route-row">
           <span className="vsel__rdot vsel__rdot--g" />
@@ -104,6 +134,7 @@ export default function VehicleSelection() {
         </div>
       </div>
 
+      {/* Vehicle list */}
       <div className="vsel__list">
         {RIDE_OPTIONS.map((opt, i) => {
           const price = fares[opt.id];
@@ -129,25 +160,29 @@ export default function VehicleSelection() {
                   <span>{opt.desc}</span>
                 </div>
               </div>
-              <div className="vsel__card-price">₹{price ? Math.round(price) : "—"}</div>
+              <div className="vsel__card-price">
+                {price ? `₹${Math.round(price)}` : "—"}
+              </div>
               {isSelected && <div className="vsel__check">✓</div>}
             </div>
           );
         })}
       </div>
 
+      {/* Book button */}
       <div className="vsel__footer">
         <button
           className={`vsel__book ${selected ? "vsel__book--on" : ""}`}
           onClick={handleBook}
           disabled={!selected || booking}
         >
-          {booking
-            ? <><span className="g-spinner" /> Booking...</>
-            : selected
-              ? `Book ${selectedOption?.name} → ₹${Math.round(fares[selected])}`
-              : "Select a vehicle"
-          }
+          {booking ? (
+            <><span className="g-spinner" /> Booking...</>
+          ) : selected ? (
+            `Book ${selectedOption?.name} → ₹${Math.round(fares[selected])}`
+          ) : (
+            "Select a vehicle"
+          )}
         </button>
       </div>
     </div>

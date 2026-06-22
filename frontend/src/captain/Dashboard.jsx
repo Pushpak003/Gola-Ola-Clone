@@ -29,7 +29,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const onNewRide = (ride) => {
-      navigate("/captain/incoming-ride", { state: { ride } });
+      navigate("/incoming-ride", { state: { ride } });
     };
     socket.on("new-ride", onNewRide);
     return () => socket.off("new-ride", onNewRide);
@@ -40,7 +40,7 @@ export default function Dashboard() {
     // Only remove captain keys — never touch user token
     localStorage.removeItem("captainToken");
     localStorage.removeItem("captainRole");
-    navigate("/captain/login");
+    navigate("/login");
   };
 
   return (
@@ -90,7 +90,7 @@ export default function Dashboard() {
       </div>
 
       <div className="cdash__footer">
-        <button className="cdash__history" onClick={() => navigate("/captain/history")}>
+        <button className="cdash__history" onClick={() => navigate("/history")}>
           Ride History
         </button>
         <button className="cdash__logout" onClick={handleLogout}>Sign out</button>

@@ -31,7 +31,7 @@ export default function CompleteProfile() {
           <p style={{ color: "var(--red)", fontWeight: 600 }}>
             ⚠️ Session invalid. Please verify your OTP again.
           </p>
-          <button className="profile__submit" onClick={() => navigate("/captain/login")}>
+          <button className="profile__submit" onClick={() => navigate("/login")}>
             ← Back to Login
           </button>
         </div>
@@ -52,7 +52,7 @@ export default function CompleteProfile() {
       // Only set captain-specific keys
       localStorage.setItem("captainToken", res.data.token);
       localStorage.setItem("captainRole", "captain");
-      navigate("/captain/dashboard");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to save profile. Try again.");
     } finally { setLoading(false); }

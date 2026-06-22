@@ -16,7 +16,7 @@ export default function CaptainLogin() {
     // Only check captainToken — user token is completely separate
     const token = localStorage.getItem("captainToken");
     const role = localStorage.getItem("captainRole");
-    if (token && role === "captain") navigate("/captain/dashboard");
+    if (token && role === "captain") navigate("/dashboard");
   }, [navigate]);
 
   const sendOTP = async (e) => {
@@ -45,14 +45,14 @@ export default function CaptainLogin() {
 
       if (onboardingRequired) {
         // onboardToken replaces captainPhone in localStorage — passed via route state
-        navigate("/captain/complete-profile", { state: { onboardToken: response.data.onboardToken } });
+        navigate("/complete-profile", { state: { onboardToken: response.data.onboardToken } });
         return;
       }
 
       // Only set captain-specific keys — never touch user "token"
       localStorage.setItem("captainToken", token);
       localStorage.setItem("captainRole", "captain");
-      navigate("/captain/dashboard");
+      navigate("/dashboard");
 
     } catch (err) {
       setError(err.response?.data?.message || "Invalid OTP");

@@ -16,17 +16,16 @@ export default function Home() {
   const pickupMarkerRef = useRef(null);
   const destMarkerRef = useRef(null);
 
-  const [userCoords, setUserCoords] = useState(null); // { lat, lng }
+  const [userCoords, setUserCoords] = useState(null);
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
   const [pickupResults, setPickupResults] = useState([]);
   const [destinationResults, setDestinationResults] = useState([]);
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
-  const [activeInput, setActiveInput] = useState(null); // "pickup" | "destination"
+  const [activeInput, setActiveInput] = useState(null);
   const [locLoading, setLocLoading] = useState(false);
 
-  // Socket connect on mount
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -40,7 +39,7 @@ export default function Home() {
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [77.4126, 23.2599], // default: Bhopal center
+      center: [77.4126, 23.2599],
       zoom: 12,
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
@@ -48,10 +47,71 @@ export default function Home() {
     return () => map.remove();
   }, []);
 
-  // Get user location on mount → pin on map
+  useEffect(() => { getUserLocation(); }, []);
+
+  // ── Draw route when BOTH locations are set ──────────────────────────────
   useEffect(() => {
-    getUserLocation();
-  }, []);
+    if (!pickupLocation || !destinationLocation || !mapRef.current) return;
+    const map = mapRef.current;
+
+    const cleanupLayers = () => {
+      // Remove layers BEFORE source (order matters in Mapbox GL)
+      ["home-route-casing", "home-route"].forEach((id) => {
+        if (map.getLayer(id)) map.removeLayer(id);
+      });
+      if (map.getSource("home-route")) map.removeSource("home-route");
+    };
+
+    const drawRoute = () => {
+      cleanupLayers(); // clear previous route first
+
+      fetch(
+        `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+        `${pickupLocation.lng},${pickupLocation.lat};` +
+        `${destinationLocation.lng},${destinationLocation.lat}` +
+        `?geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          const route = data.routes?.[0]?.geometry;
+          if (!route) return;
+
+          map.addSource("home-route", {
+            type: "geojson",
+            data: { type: "Feature", geometry: route },
+          });
+
+          // White casing under line for contrast
+          map.addLayer({
+            id: "home-route-casing",
+            type: "line",
+            source: "home-route",
+            paint: { "line-color": "#ffffff", "line-width": 8, "line-opacity": 0.8 },
+          });
+
+          map.addLayer({
+            id: "home-route",
+            type: "line",
+            source: "home-route",
+            paint: { "line-color": "#0a0a0a", "line-width": 4 },
+          });
+
+          const bounds = new mapboxgl.LngLatBounds()
+            .extend([pickupLocation.lng, pickupLocation.lat])
+            .extend([destinationLocation.lng, destinationLocation.lat]);
+          map.fitBounds(bounds, { padding: { top: 80, bottom: 320, left: 60, right: 60 } });
+        })
+        .catch((err) => console.error("Route fetch error:", err));
+    };
+
+    if (map.loaded()) {
+      drawRoute();
+    } else {
+      map.once("load", drawRoute);
+    }
+
+    return cleanupLayers;
+  }, [pickupLocation, destinationLocation]);
 
   const getUserLocation = () => {
     setLocLoading(true);
@@ -60,13 +120,7 @@ export default function Home() {
         const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserCoords(coords);
         setLocLoading(false);
-
-        // Fly map to user
-        if (mapRef.current) {
-          mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
-        }
-
-        // Add/update user location marker (blue pulsing dot)
+        if (mapRef.current) mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
         if (userMarkerRef.current) userMarkerRef.current.remove();
         const el = document.createElement("div");
         el.className = "user-location-dot";
@@ -74,17 +128,13 @@ export default function Home() {
           .setLngLat([coords.lng, coords.lat])
           .addTo(mapRef.current);
       },
-      () => {
-        setLocLoading(false);
-        alert("Please allow location access for nearby suggestions.");
-      },
+      () => setLocLoading(false),
       { enableHighAccuracy: true }
     );
   };
 
   const setMyLocationAsPickup = () => {
     if (!userCoords) return getUserLocation();
-    // Reverse geocode via Mapbox to get place name
     setLocLoading(true);
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${userCoords.lng},${userCoords.lat}.json?access_token=${mapboxgl.accessToken}&country=in&limit=1`
@@ -97,90 +147,72 @@ export default function Home() {
         setPickupResults([]);
         setActiveInput(null);
         setLocLoading(false);
-
-        // Add pickup marker
         if (pickupMarkerRef.current) pickupMarkerRef.current.remove();
-        pickupMarkerRef.current = new mapboxgl.Marker({ color: "#1db954" })
+        const el = document.createElement("div");
+        el.className = "pickup-marker";
+        el.innerHTML = "A";
+        pickupMarkerRef.current = new mapboxgl.Marker({ element: el })
           .setLngLat([userCoords.lng, userCoords.lat])
           .addTo(mapRef.current);
       })
-      .catch(() => {
-        // Fallback if reverse geocode fails
-        setPickup("My Location");
-        setPickupLocation({ name: "My Location", lat: userCoords.lat, lng: userCoords.lng });
-        setLocLoading(false);
-      });
+      .catch(() => setLocLoading(false));
   };
 
   const searchPlaces = async (value, type) => {
     if (type === "pickup") setPickup(value);
     else setDestination(value);
-
     if (value.length < 3) {
       type === "pickup" ? setPickupResults([]) : setDestinationResults([]);
       return;
     }
-
     try {
       const { data } = await api.get("/map/search", {
-        params: {
-          query: value,
-          userLat: userCoords?.lat,
-          userLng: userCoords?.lng,
-        },
+        params: { query: value, userLat: userCoords?.lat, userLng: userCoords?.lng },
       });
-
-      // Backend returns Mapbox features: { place_name, center: [lng, lat] }
       const results = (data.places || []).map((f) => ({
         id: f.id,
         place_name: f.place_name,
         lat: f.center[1],
         lng: f.center[0],
       }));
-
       type === "pickup" ? setPickupResults(results) : setDestinationResults(results);
     } catch (err) {
       console.error("Search error:", err);
     }
   };
 
+  const placeMarker = (coords, type) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const el = document.createElement("div");
+    el.className = type === "pickup" ? "pickup-marker" : "dest-marker";
+    el.innerHTML = type === "pickup" ? "A" : "B";
+    if (type === "pickup") {
+      if (pickupMarkerRef.current) pickupMarkerRef.current.remove();
+      pickupMarkerRef.current = new mapboxgl.Marker({ element: el })
+        .setLngLat([coords.lng, coords.lat]).addTo(map);
+    } else {
+      if (destMarkerRef.current) destMarkerRef.current.remove();
+      destMarkerRef.current = new mapboxgl.Marker({ element: el })
+        .setLngLat([coords.lng, coords.lat]).addTo(map);
+    }
+  };
+
   const selectPlace = (place, type) => {
     const coords = { name: place.place_name, lat: place.lat, lng: place.lng };
-
     if (type === "pickup") {
       setPickup(place.place_name);
       setPickupLocation(coords);
       setPickupResults([]);
       setActiveInput(null);
-
-      if (mapRef.current) {
-        if (pickupMarkerRef.current) pickupMarkerRef.current.remove();
-        pickupMarkerRef.current = new mapboxgl.Marker({ color: "#1db954" })
-          .setLngLat([coords.lng, coords.lat])
-          .addTo(mapRef.current);
-        mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
-      }
+      placeMarker(coords, "pickup");
+      if (!destinationLocation) mapRef.current?.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
     } else {
       setDestination(place.place_name);
       setDestinationLocation(coords);
       setDestinationResults([]);
       setActiveInput(null);
-
-      if (mapRef.current) {
-        if (destMarkerRef.current) destMarkerRef.current.remove();
-        destMarkerRef.current = new mapboxgl.Marker({ color: "#e53e3e" })
-          .setLngLat([coords.lng, coords.lat])
-          .addTo(mapRef.current);
-
-        if (pickupLocation) {
-          const bounds = new mapboxgl.LngLatBounds()
-            .extend([pickupLocation.lng, pickupLocation.lat])
-            .extend([coords.lng, coords.lat]);
-          mapRef.current.fitBounds(bounds, { padding: 80 });
-        } else {
-          mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
-        }
-      }
+      placeMarker(coords, "destination");
     }
   };
 
@@ -200,21 +232,20 @@ export default function Home() {
 
   return (
     <div className="home">
-      {/* Map */}
       <div ref={mapContainerRef} className="home__map" />
 
-      {/* Top bar */}
       <div className="home__topbar">
         <span className="home__logo">GOLA</span>
-        <div className="home__topbar-right"><button className="home__history-btn" onClick={() => navigate("/user/history")}>History</button><button className="home__logout" onClick={handleLogout}>Sign out</button></div>
+        <div className="home__topbar-right">
+          <button className="home__history-btn" onClick={() => navigate("/user/history")}>History</button>
+          <button className="home__logout" onClick={handleLogout}>Sign out</button>
+        </div>
       </div>
 
-      {/* Bottom sheet */}
       <div className="home__sheet">
         <div className="home__sheet-handle" />
         <h3 className="home__sheet-title">Where to? 🚕</h3>
 
-        {/* Pickup field */}
         <div className="home__field-group">
           <div className={`home__input-row ${activeInput === "pickup" ? "home__input-row--active" : ""}`}>
             <div className="home__dot home__dot--green" />
@@ -226,34 +257,21 @@ export default function Home() {
               onChange={(e) => searchPlaces(e.target.value, "pickup")}
               className="home__input"
             />
-            {/* My Location button */}
-            <button
-              className="home__myloc-btn"
-              onClick={setMyLocationAsPickup}
-              disabled={locLoading}
-              title="Use my current location"
-            >
+            <button className="home__myloc-btn" onClick={setMyLocationAsPickup} disabled={locLoading} title="Use my current location">
               {locLoading ? (
                 <span className="home__myloc-spinner" />
               ) : (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+                  <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                  <circle cx="12" cy="12" r="9" strokeOpacity="0.3"/>
                 </svg>
               )}
             </button>
           </div>
-
-          {/* Pickup suggestions */}
           {pickupResults.length > 0 && activeInput === "pickup" && (
             <div className="home__dropdown">
               {pickupResults.map((place) => (
-                <div
-                  key={place.id}
-                  className="home__dropdown-item"
-                  onClick={() => selectPlace(place, "pickup")}
-                >
+                <div key={place.id} className="home__dropdown-item" onClick={() => selectPlace(place, "pickup")}>
                   <span className="home__dropdown-icon">📍</span>
                   <span className="home__dropdown-text">{place.place_name}</span>
                 </div>
@@ -264,7 +282,6 @@ export default function Home() {
 
         <div className="home__divider" />
 
-        {/* Destination field */}
         <div className="home__field-group">
           <div className={`home__input-row ${activeInput === "destination" ? "home__input-row--active" : ""}`}>
             <div className="home__dot home__dot--red" />
@@ -277,16 +294,10 @@ export default function Home() {
               className="home__input"
             />
           </div>
-
-          {/* Destination suggestions */}
           {destinationResults.length > 0 && activeInput === "destination" && (
             <div className="home__dropdown">
               {destinationResults.map((place) => (
-                <div
-                  key={place.id}
-                  className="home__dropdown-item"
-                  onClick={() => selectPlace(place, "destination")}
-                >
+                <div key={place.id} className="home__dropdown-item" onClick={() => selectPlace(place, "destination")}>
                   <span className="home__dropdown-icon">🏁</span>
                   <span className="home__dropdown-text">{place.place_name}</span>
                 </div>

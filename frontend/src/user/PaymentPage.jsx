@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { userAPI } from "../api/axios";
 import "./Ride.css";
 
-// Razorpay checkout is loaded from CDN
 const loadRazorpay = () =>
   new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
@@ -31,24 +30,38 @@ export default function PaymentPage() {
     setError("");
 
     try {
+      // 1. Load Razorpay script
       const loaded = await loadRazorpay();
-      if (!loaded) throw new Error("Failed to load payment SDK. Check your connection.");
+      if (!loaded) {
+        setError("Payment SDK load failed. Check your internet connection.");
+        setLoading(false);
+        return;
+      }
 
-      // 1. Create order on backend
-      const { data } = await userAPI.post("/payment/create-order", { rideId: ride.id });
-      if (!data.success) throw new Error(data.message);
-      const order = data.order;
+      // 2. Create order on backend
+      let order;
+      try {
+        const { data } = await userAPI.post("/payment/create-order", { rideId: ride.id });
+        if (!data.success) throw new Error(data.message);
+        order = data.order;
+      } catch (err) {
+        const msg = err.response?.data?.message || err.message || "Could not create payment order";
+        setError(msg);
+        setLoading(false);
+        return;
+      }
 
-      // 2. Open Razorpay checkout
+      // 3. Open Razorpay checkout
+      // Note: DO NOT put setLoading(false) in finally — modal is async
       const options = {
         key: order.keyId,
         amount: order.amount,
         currency: order.currency,
         name: "Gola",
-        description: `Ride from ${ride.pickup} to ${ride.destination}`,
+        description: `${ride.pickup} → ${ride.destination}`,
         order_id: order.orderId,
         handler: async (response) => {
-          // 3. Verify signature on backend
+          // 4. Verify on backend
           try {
             const verify = await userAPI.post("/payment/verify", {
               rideId: ride.id,
@@ -61,20 +74,20 @@ export default function PaymentPage() {
                 state: { ride, paymentId: response.razorpay_payment_id },
               });
             } else {
-              setError("Payment verification failed. Contact support.");
+              setError("Payment verification failed. Please contact support.");
+              setLoading(false);
             }
           } catch {
-            setError("Payment verification failed. Please retry.");
+            setError("Payment verified on gateway but server error. Contact support.");
+            setLoading(false);
           }
         },
-        prefill: {
-          contact: ride.userPhone || "",
-        },
+        prefill: { contact: ride.userPhone || "" },
         theme: { color: "#0a0a0a" },
         modal: {
           ondismiss: () => {
             setLoading(false);
-            setError("Payment cancelled.");
+            setError("Payment cancelled. You can retry or pay by cash.");
           },
         },
       };
@@ -85,11 +98,16 @@ export default function PaymentPage() {
         setLoading(false);
       });
       rzp.open();
+      // Don't setLoading(false) here — modal is open, loading=true means "processing"
+
     } catch (err) {
-      setError(err.message || "Something went wrong");
-    } finally {
+      setError(err.message || "Something went wrong. Please retry.");
       setLoading(false);
     }
+  };
+
+  const handleCash = () => {
+    navigate("/home");
   };
 
   if (!ride) return null;
@@ -98,7 +116,7 @@ export default function PaymentPage() {
     <div className="liveride liveride--done">
       <div className="liveride__done-icon">💳</div>
       <h1 className="liveride__done-title">Pay for your Ride</h1>
-      <p className="liveride__done-sub" style={{ marginBottom: 8 }}>
+      <p className="liveride__done-sub">
         {ride.pickup} → {ride.destination}
       </p>
 
@@ -108,44 +126,28 @@ export default function PaymentPage() {
       </div>
 
       {error && (
-        <div style={{
-          background: "#fff5f5",
-          border: "1.5px solid #fed7d7",
-          color: "#c53030",
-          padding: "12px 16px",
-          borderRadius: 10,
-          fontSize: 14,
-          marginBottom: 16,
-          width: "100%",
-          boxSizing: "border-box",
-        }}>
-          ⚠️ {error}
-        </div>
+        <div className="payment__error">⚠️ {error}</div>
       )}
 
       <button
         className="liveride__home-btn"
         onClick={handlePay}
         disabled={loading}
-        style={{ background: loading ? "#888" : "#0a0a0a" }}
       >
-        {loading ? "Processing..." : "Pay ₹" + Math.round(ride.fare) + " →"}
+        {loading
+          ? <><span className="g-spinner" style={{ marginRight: 8 }} /> Processing...</>
+          : `Pay ₹${Math.round(ride.fare)} Online →`}
       </button>
 
-      <button
-        style={{
-          marginTop: 12,
-          background: "transparent",
-          border: "none",
-          color: "#666",
-          fontSize: 14,
-          cursor: "pointer",
-          textDecoration: "underline",
-        }}
-        onClick={() => navigate("/home")}
-      >
-        Pay Later (Cash)
+      <div className="payment__divider">
+        <span>or</span>
+      </div>
+
+      <button className="payment__cash-btn" onClick={handleCash}>
+        💵 Pay by Cash to Captain
       </button>
+
+      <p className="payment__note">Cash payment doesn't require any action here</p>
     </div>
   );
 }

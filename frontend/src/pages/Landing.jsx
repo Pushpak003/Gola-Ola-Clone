@@ -1,68 +1,44 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import './Landing.css';
+import { useNavigate } from "react-router-dom";
+import "./Landing.css";
 
-const Landing = () => {
+export default function Landing() {
   const navigate = useNavigate();
 
   return (
     <div className="landing">
-      {/* Background grid pattern */}
-      <div className="landing__grid" />
-
-      {/* Top bar */}
-      <div className="landing__topbar">
+      <div className="landing__top">
         <span className="landing__logo">GOLA</span>
+        <p className="landing__tagline">Your city, your ride.</p>
       </div>
 
-      {/* Hero content */}
-      <div className="landing__hero">
-        <div className="landing__badge">🏙️ Now Live in Bhopal</div>
-        <h1 className="landing__title">
-          Your city.<br />
-          <span className="landing__title--accent">Your ride.</span>
-        </h1>
-        <p className="landing__subtitle">
-          Fast, safe, and affordable rides at your fingertips — anytime, anywhere.
-        </p>
+      <div className="landing__cards">
+        {/* User card */}
+        <div className="landing__card landing__card--user" onClick={() => navigate("/login")}>
+          <div className="landing__card-icon">🚕</div>
+          <div className="landing__card-content">
+            <h2 className="landing__card-title">Ride with Gola</h2>
+            <p className="landing__card-sub">Book a ride to anywhere in the city</p>
+          </div>
+          <div className="landing__card-arrow">→</div>
+        </div>
 
-        {/* Floating vehicle icons */}
-        <div className="landing__vehicles">
-          <div className="landing__vehicle">🚗</div>
-          <div className="landing__vehicle">🛺</div>
-          <div className="landing__vehicle">🏍️</div>
+        {/* Captain card — opens captain.html (separate app) */}
+        <div
+          className="landing__card landing__card--captain"
+          onClick={() => window.location.href = "/captain.html"}
+        >
+          <div className="landing__card-icon">🏍️</div>
+          <div className="landing__card-content">
+            <h2 className="landing__card-title">Drive with Gola</h2>
+            <p className="landing__card-sub">Earn on your own schedule as a captain</p>
+          </div>
+          <div className="landing__card-arrow">→</div>
         </div>
       </div>
 
-      {/* Bottom CTA card */}
-      <div className="landing__card animate-slide-up">
-        <h2 className="landing__card-title">Get moving today</h2>
-        <p className="landing__card-sub">Book in seconds. No surge pricing surprises.</p>
-
-        <div className="landing__actions">
-          <button
-            className="landing__btn landing__btn--primary"
-            onClick={() => navigate('/login')}
-          >
-            <span>Book a Ride</span>
-            <span className="landing__btn-icon">→</span>
-          </button>
-
-          <button
-            className="landing__btn landing__btn--secondary"
-            onClick={() => navigate('/captain/login')}
-          >
-            <span>Drive with Gola</span>
-            <span className="landing__btn-icon">🏍️</span>
-          </button>
-        </div>
-
-        <p className="landing__fine">
-          By continuing, you agree to our Terms & Privacy Policy
-        </p>
-      </div>
+      <p className="landing__footer">
+        Trusted by 10,000+ riders across Central India
+      </p>
     </div>
   );
-};
-
-export default Landing;
+}
