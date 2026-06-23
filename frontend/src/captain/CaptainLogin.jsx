@@ -41,7 +41,7 @@ export default function CaptainLogin() {
     setLoading(true);
     try {
       const response = await captainAPI.post("/captain/verify-otp", { phone, otp });
-      const { token, onboardingRequired, phone: captainPhone } = response.data;
+      const { token, onboardingRequired } = response.data;
 
       if (onboardingRequired) {
         // onboardToken replaces captainPhone in localStorage — passed via route state
@@ -125,7 +125,7 @@ export default function CaptainLogin() {
 
       <div className="auth__footer">
         <p className="auth__footer-text">For registered Gola captains only</p>
-        <div className="auth__switch" onClick={() => navigate("/login")}>
+        <div className="auth__switch" onClick={() => window.location.assign("/login")}>
           Book a ride as User 🚕
         </div>
       </div>

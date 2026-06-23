@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { userAPI } from "../api/axios";
 import { socket } from "../sockets/socket.js";
@@ -113,7 +113,7 @@ const UserLogin = () => {
 
       <div className="auth__footer">
         <p className="auth__footer-text">By proceeding, you agree to receive SMS from Gola</p>
-        <div className="auth__switch" onClick={() => navigate("/captain/login")}>
+        <div className="auth__switch" onClick={() => window.location.assign("/captain.html#/login")}>
           Sign in as Captain 🏍️
         </div>
       </div>

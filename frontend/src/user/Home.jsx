@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userAPI as api } from "../api/axios";
 import { socket } from "../sockets/socket.js";
@@ -26,6 +26,26 @@ export default function Home() {
   const [activeInput, setActiveInput] = useState(null);
   const [locLoading, setLocLoading] = useState(false);
 
+  const getUserLocation = useCallback(() => {
+    setLocLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserCoords(coords);
+        setLocLoading(false);
+        if (mapRef.current) mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
+        if (userMarkerRef.current) userMarkerRef.current.remove();
+        const el = document.createElement("div");
+        el.className = "user-location-dot";
+        userMarkerRef.current = new mapboxgl.Marker({ element: el })
+          .setLngLat([coords.lng, coords.lat])
+          .addTo(mapRef.current);
+      },
+      () => setLocLoading(false),
+      { enableHighAccuracy: true }
+    );
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -47,7 +67,10 @@ export default function Home() {
     return () => map.remove();
   }, []);
 
-  useEffect(() => { getUserLocation(); }, []);
+  useEffect(() => {
+    const locationTimer = window.setTimeout(getUserLocation, 0);
+    return () => window.clearTimeout(locationTimer);
+  }, [getUserLocation]);
 
   // ── Draw route when BOTH locations are set ──────────────────────────────
   useEffect(() => {
@@ -112,26 +135,6 @@ export default function Home() {
 
     return cleanupLayers;
   }, [pickupLocation, destinationLocation]);
-
-  const getUserLocation = () => {
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserCoords(coords);
-        setLocLoading(false);
-        if (mapRef.current) mapRef.current.flyTo({ center: [coords.lng, coords.lat], zoom: 14 });
-        if (userMarkerRef.current) userMarkerRef.current.remove();
-        const el = document.createElement("div");
-        el.className = "user-location-dot";
-        userMarkerRef.current = new mapboxgl.Marker({ element: el })
-          .setLngLat([coords.lng, coords.lat])
-          .addTo(mapRef.current);
-      },
-      () => setLocLoading(false),
-      { enableHighAccuracy: true }
-    );
-  };
 
   const setMyLocationAsPickup = () => {
     if (!userCoords) return getUserLocation();

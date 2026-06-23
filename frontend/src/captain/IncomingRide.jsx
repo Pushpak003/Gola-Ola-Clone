@@ -21,7 +21,7 @@ export default function IncomingRide() {
         "/ride/accept",
         { rideId: ride?.id },
       );
-      navigate("/captain/live-ride", { state: { ride: res.data.ride } });
+      navigate("/live-ride", { state: { ride: res.data.ride } });
     } catch (err) {
       alert(err.response?.data?.message || "Failed to accept ride");
     } finally {
@@ -30,7 +30,7 @@ export default function IncomingRide() {
   };
 
   const rejectRide = () => {
-    navigate("/captain/dashboard");
+    navigate("/dashboard");
   };
 
   return (

@@ -23,7 +23,9 @@ export default function CaptainLiveRide() {
   const [otpInput, setOtpInput] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState(null); // 'PENDING' | 'PAID' | null
+  const [paymentStatus, setPaymentStatus] = useState(() =>
+    ride?.status === "COMPLETED" ? "PENDING" : null
+  ); // 'PENDING' | 'PAID' | null
 
   // Send captain location periodically
   useEffect(() => {
@@ -113,7 +115,7 @@ export default function CaptainLiveRide() {
 
   // Socket: ride events + payment-received
   useEffect(() => {
-    const onPaymentReceived = ({ amount }) => {
+    const onPaymentReceived = () => {
       setPaymentStatus("PAID");
     };
     socket.on("payment-received", onPaymentReceived);
@@ -123,7 +125,6 @@ export default function CaptainLiveRide() {
   // Poll payment status after ride completed
   useEffect(() => {
     if (rideStatus !== "COMPLETED" || !ride?.id) return;
-    setPaymentStatus("PENDING");
     const poll = setInterval(async () => {
       try {
         const { data } = await api.get(`/payment/status/${ride.id}`);
@@ -155,6 +156,7 @@ export default function CaptainLiveRide() {
     setError("");
     try {
       await api.post("/ride/complete", { rideId: ride.id });
+      setPaymentStatus("PENDING");
       setRideStatus("COMPLETED");
     } catch (err) {
       setError(err.response?.data?.message || "Failed to complete ride");
@@ -192,7 +194,7 @@ export default function CaptainLiveRide() {
           <span className="liveride__done-fare-val">₹{Math.round(ride.fare)}</span>
         </div>
         {paymentStatus === "PAID" ? (
-          <button className="liveride__home-btn" onClick={() => navigate("/captain/dashboard", { replace: true })}>
+          <button className="liveride__home-btn" onClick={() => navigate("/dashboard", { replace: true })}>
             Back to Dashboard →
           </button>
         ) : (
@@ -202,7 +204,7 @@ export default function CaptainLiveRide() {
             </p>
             <button
               style={{ background: "transparent", border: "none", color: "#666", fontSize: 14, cursor: "pointer", textDecoration: "underline" }}
-              onClick={() => navigate("/captain/dashboard", { replace: true })}
+              onClick={() => navigate("/dashboard", { replace: true })}
             >
               Continue to dashboard (Cash collected)
             </button>

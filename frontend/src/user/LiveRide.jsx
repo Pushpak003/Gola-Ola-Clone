@@ -74,7 +74,7 @@ export default function LiveRide() {
 
     mapRef.current = map;
     return () => map.remove();
-  }, []);
+  }, [state]);
 
   // Socket events
   useEffect(() => {

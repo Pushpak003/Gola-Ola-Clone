@@ -24,7 +24,7 @@ export default function CaptainHistory() {
   return (
     <div className="hist">
       <div className="hist__header">
-        <button className="hist__back" onClick={() => navigate("/captain/dashboard")}>←</button>
+        <button className="hist__back" onClick={() => navigate("/dashboard")}>←</button>
         <h1 className="hist__title">Ride History</h1>
         <div style={{ width: 38 }} />
       </div>
@@ -55,7 +55,7 @@ export default function CaptainHistory() {
           <span className="hist__empty-icon">🏍️</span>
           <h3>No rides yet</h3>
           <p>Go online to start accepting rides.</p>
-          <button className="hist__book-btn" onClick={() => navigate("/captain/dashboard")}>Go to Dashboard →</button>
+          <button className="hist__book-btn" onClick={() => navigate("/dashboard")}>Go to Dashboard →</button>
         </div>
       ) : (
         <div className="hist__list">

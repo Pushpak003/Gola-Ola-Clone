@@ -25,7 +25,7 @@ export default function Landing() {
         {/* Captain card — opens captain.html (separate app) */}
         <div
           className="landing__card landing__card--captain"
-          onClick={() => window.location.href = "/captain.html"}
+          onClick={() => window.location.href = "/captain.html#/login"}
         >
           <div className="landing__card-icon">🏍️</div>
           <div className="landing__card-content">
