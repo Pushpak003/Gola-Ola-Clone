@@ -11,20 +11,18 @@ export default function IncomingRide() {
   const [loading, setLoading] = useState(false);
 
   const acceptRide = async () => {
-    if (!ride?.id)
-      return alert("Ride data missing!");
-    if (loading) return; // ← double click prevent
+    if (!ride?.id) return alert("Ride data missing!");
+    if (loading) return;
     setLoading(true);
     try {
-      const res =
-      await api.post(
-        "/ride/accept",
-        { rideId: ride?.id },
-      );
-      navigate("/live-ride", { state: { ride: res.data.ride } });
+      const res = await api.post("/ride/accept", { rideId: ride.id });
+      if (res.data?.success) {
+        navigate("/live-ride", { state: { ride: res.data.ride } });
+      } else {
+        alert(res.data?.message || "Failed to accept ride");
+      }
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to accept ride");
-    } finally {
+      alert(err.response?.data?.message || "Failed to accept ride. Try again.");
       setLoading(false);
     }
   };

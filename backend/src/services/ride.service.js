@@ -107,17 +107,28 @@ export const acceptRideService = async ({ rideId, captainId }) => {
     where: { id: rideId, status: "SEARCHING" },
     data: { captainId, status: "ACCEPTED" },
   });
-  if (result.count === 0) throw new Error("Ride already accepted");
+  if (result.count === 0) throw new Error("Ride already accepted or cancelled");
 
-  const updatedRide = await prisma.ride.findUnique({ where: { id: rideId } });
+  const updatedRide = await prisma.ride.findUnique({
+    where: { id: rideId },
+    include: { captain: true, user: true }
+  });
 
   const driver = onlineDrivers.get(captainId);
   if (driver) driver.isAvailable = false;
 
+  const io = getIo();
+
   const userSocketId = onlineUsers.get(updatedRide.userId);
   if (userSocketId) {
-    getIo().to(userSocketId).emit("ride-confirmed", updatedRide);
+    io.to(userSocketId).emit("ride-confirmed", updatedRide);
   }
+
+  const captainSocketId = driver?.socketId;
+  if (captainSocketId) {
+    io.to(captainSocketId).emit("ride-accepted", { success: true, ride: updatedRide });
+  }
+
   return updatedRide;
 };
 

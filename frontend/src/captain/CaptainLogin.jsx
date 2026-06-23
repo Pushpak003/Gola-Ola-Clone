@@ -62,7 +62,7 @@ export default function CaptainLogin() {
   };
 
   return (
-    <div className="auth">
+    <div className="auth captain-login">
       <div className="auth__top">
         <div className="auth__logo">GOLA</div>
         <div className="captain-badge">Captain Portal</div>

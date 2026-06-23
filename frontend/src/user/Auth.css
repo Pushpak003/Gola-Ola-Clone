@@ -169,3 +169,42 @@
   transition: all 0.18s;
 }
 .auth__switch:hover { background: var(--gray-100); color: var(--black); }
+
+/* Captain Login Specific Styles */
+.auth.captain-login {
+  background: linear-gradient(135deg, var(--black) 0%, #1a1a1a 100%);
+}
+
+.auth.captain-login .auth__top {
+  text-align: center;
+  padding-top: 40px;
+}
+
+.auth.captain-login .auth__logo {
+  color: var(--white);
+  font-size: 24px;
+}
+
+.auth.captain-login .auth__body {
+  background: var(--white);
+  margin: 30px -28px 0;
+  padding: 32px 28px;
+  border-radius: 32px 32px 0 0;
+}
+
+.auth.captain-login .auth__title {
+  font-size: 28px;
+}
+
+.captain-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--black);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 6px 12px;
+  border-radius: 100px;
+  margin-top: 10px;
+  text-transform: uppercase;
+}

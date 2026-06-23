@@ -25,18 +25,27 @@ export default function VehicleSelection() {
       return;
     }
 
+    setError("");
+    setFares(null);
+
     api
       .get("/ride/fare", {
         params: {
-          pickupLat:      state.pickupLocation.lat,
-          pickupLng:      state.pickupLocation.lng,
+          pickupLat: state.pickupLocation.lat,
+          pickupLng: state.pickupLocation.lng,
           destinationLat: state.destinationLocation.lat,
           destinationLng: state.destinationLocation.lng,
         },
       })
       .then(({ data }) => {
         if (data?.success && data?.data?.fares) {
-          setFares(data.data.fares);
+          const fareData = data.data.fares;
+          if (Object.keys(fareData).length > 0) {
+            setFares(fareData);
+            setSelected(RIDE_OPTIONS[0].id);
+          } else {
+            setError("No fares available for this route");
+          }
         } else {
           setError(data?.message || "Could not load fares. Please go back and retry.");
         }

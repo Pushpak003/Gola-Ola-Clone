@@ -1,11 +1,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../sockets/socket";
+import { captainAPI } from "../api/axios";
 import "./Captain.css";
 
 export default function Dashboard() {
   const [isOnline, setIsOnline] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkExistingRide = async () => {
+      try {
+        const token = localStorage.getItem("captainToken");
+        if (!token || !isOnline) return;
+
+        const { data } = await captainAPI.get("/ride/captain-current");
+        if (data?.success && data?.ride) {
+          navigate("/live-ride", { state: { ride: data.ride } });
+        }
+      } catch (err) {
+        console.log("No active ride");
+      }
+    };
+
+    if (isOnline) {
+      checkExistingRide();
+    }
+  }, [isOnline, navigate]);
 
   const goOnline = () => {
     navigator.geolocation.getCurrentPosition(
@@ -37,7 +58,6 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     if (isOnline) socket.disconnect();
-    // Only remove captain keys — never touch user token
     localStorage.removeItem("captainToken");
     localStorage.removeItem("captainRole");
     navigate("/login");
