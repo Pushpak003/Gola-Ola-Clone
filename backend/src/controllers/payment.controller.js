@@ -31,11 +31,13 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
-// Raw body needed for Razorpay webhook signature check
 export const webhook = async (req, res) => {
   try {
     const signature = req.headers["x-razorpay-signature"];
-    await handleWebhookService({ body: req.body, signature });
+    // req.body is raw Buffer when coming through express.raw()
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const parsedBody = JSON.parse(rawBody.toString());
+    await handleWebhookService({ body: parsedBody, rawBody, signature });
     res.status(200).json({ received: true });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

@@ -142,13 +142,15 @@ export const verifyPaymentService = async ({
  * Razorpay webhook handler (optional but recommended for production).
  * Handles async events like payment.failed.
  */
-export const handleWebhookService = async ({ body, signature }) => {
+export const handleWebhookService = async ({ body, rawBody, signature }) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) return; // Webhook not configured — skip
 
+  // FIX: use rawBody buffer for accurate HMAC (JSON.stringify re-ordering breaks sig)
+  const sigPayload = rawBody || Buffer.from(JSON.stringify(body));
   const expectedSig = crypto
     .createHmac("sha256", secret)
-    .update(JSON.stringify(body))
+    .update(sigPayload)
     .digest("hex");
 
   if (expectedSig !== signature) throw new Error("Invalid webhook signature");

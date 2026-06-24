@@ -103,15 +103,17 @@ export const createRideService = async ({
 };
 
 export const acceptRideService = async ({ rideId, captainId }) => {
-  const result = await prisma.ride.updateMany({
-    where: { id: rideId, status: "SEARCHING" },
-    data: { captainId, status: "ACCEPTED" },
-  });
-  if (result.count === 0) throw new Error("Ride already accepted or cancelled");
+  // FIX: Use transaction to prevent race condition where two captains accept same ride
+  const updatedRide = await prisma.$transaction(async (tx) => {
+    const existing = await tx.ride.findUnique({ where: { id: rideId } });
+    if (!existing) throw new Error("Ride not found");
+    if (existing.status !== "SEARCHING") throw new Error("Ride already accepted or cancelled");
 
-  const updatedRide = await prisma.ride.findUnique({
-    where: { id: rideId },
-    include: { captain: true, user: true }
+    return tx.ride.update({
+      where: { id: rideId },
+      data: { captainId, status: "ACCEPTED" },
+      include: { captain: true, user: true },
+    });
   });
 
   const driver = onlineDrivers.get(captainId);

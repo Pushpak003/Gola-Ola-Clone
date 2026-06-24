@@ -50,17 +50,13 @@ export const initSocket = (server) => {
     });
 
     // CAPTAIN LOCATION UPDATE
-    socket.on("captain-location", async (data) => {
+    // FIX: Use in-memory rideUserMap instead of DB query on every tick
+    socket.on("captain-location", (data) => {
       try {
-        const { rideId, lat, lng } = data;
+        const { rideId, lat, lng, userId } = data;
+        if (!rideId || !userId) return;
 
-        // FIX: Guard against null rideId — captain is online but no active ride yet
-        if (!rideId) return;
-
-        const ride = await prisma.ride.findUnique({ where: { id: rideId } });
-        if (!ride) return;
-
-        const userSocketId = onlineUsers.get(ride.userId);
+        const userSocketId = onlineUsers.get(userId);
         if (!userSocketId) return;
 
         io.to(userSocketId).emit("captain-location-update", { rideId, lat, lng });

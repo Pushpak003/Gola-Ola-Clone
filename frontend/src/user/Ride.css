@@ -228,3 +228,95 @@
   margin-top: 10px;
   text-align: center;
 }
+/* ===== CAPTAIN LIVE RIDE (clive) ===== */
+.clive {
+  height: 100dvh; height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #0d1117;
+}
+.clive__map {
+  position: absolute; inset: 0; z-index: 0;
+}
+.clive__topbar {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 18px 18px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 10; pointer-events: none;
+}
+.clive__logo {
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px;
+  color: #00c896; background: #0d1117;
+  padding: 8px 16px; border-radius: 100px;
+  pointer-events: all; letter-spacing: 0.1em;
+}
+.clive__tag {
+  background: #161b22; color: #e6edf3;
+  font-size: 11px; font-weight: 700;
+  padding: 7px 14px; border-radius: 100px;
+  border: 1px solid #30363d; pointer-events: all;
+}
+.clive__sheet {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: #161b22;
+  border-radius: 24px 24px 0 0;
+  padding: 10px 18px 40px;
+  z-index: 10;
+  box-shadow: 0 -6px 30px rgba(0,0,0,0.4);
+  animation: slideUp 0.3s ease;
+}
+.clive__sheet-handle {
+  width: 36px; height: 4px; background: #30363d;
+  border-radius: 2px; margin: 0 auto 14px;
+}
+.clive__route-mini {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 12px 0; border-bottom: 1px solid #30363d; margin-bottom: 14px;
+}
+.clive__rrow { display: flex; align-items: center; gap: 10px; }
+.clive__rdot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.clive__rdot--g { background: #00c896; }
+.clive__rdot--r { background: #f85149; }
+.clive__rline {
+  width: 1.5px; height: 14px; background: #30363d; margin-left: 4px;
+}
+.clive__rname {
+  font-size: 13px; font-weight: 500; color: #c9d1d9;
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.clive__meta-row {
+  display: flex; justify-content: space-around;
+  padding: 12px 0; border-bottom: 1px solid #30363d; margin-bottom: 14px;
+}
+.clive__meta-item { text-align: center; }
+.clive__meta-val { display: block; font-size: 18px; font-weight: 700; color: #e6edf3; }
+.clive__meta-key { display: block; font-size: 11px; color: #8b949e; margin-top: 2px; }
+.clive__error {
+  color: #f85149; font-size: 13px; font-weight: 500;
+  margin-bottom: 10px; text-align: center;
+}
+.clive__otp-section {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.clive__otp-hint { font-size: 13px; color: #8b949e; text-align: center; }
+.clive__otp-input {
+  background: #21262d; border: 1.5px solid #30363d; border-radius: 12px;
+  padding: 14px 16px; font-size: 22px; font-weight: 700;
+  color: #e6edf3; text-align: center; letter-spacing: 0.3em;
+  width: 100%;
+}
+.clive__otp-input:focus { border-color: #00c896; outline: none; }
+.clive__start-btn {
+  background: #00c896; color: #000; font-weight: 700; font-size: 15px;
+  padding: 14px; border-radius: 14px; width: 100%; border: none; cursor: pointer;
+}
+.clive__start-btn:disabled { opacity: 0.5; }
+.clive__complete-btn {
+  background: #3fb950; color: #000; font-weight: 700; font-size: 15px;
+  padding: 14px; border-radius: 14px; width: 100%; border: none; cursor: pointer;
+}
+.clive__complete-btn:disabled { opacity: 0.5; }
+.captain-self-marker { font-size: 24px; }

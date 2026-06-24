@@ -18,9 +18,14 @@ export default function SearchingRide() {
           pickup: ride.pickup,
           destination: ride.destination,
           fare: ride.fare,
-          otp: ride.otp,               // otp generated at ride creation
+          otp: ride.otp,
           vehicleType: ride.vehicleType,
           captainId: ride.captainId,
+          // Pass coordinates so LiveRide map can draw route & place markers
+          pickupLat: state?.pickupLat || ride.pickupLat,
+          pickupLng: state?.pickupLng || ride.pickupLng,
+          destinationLat: state?.destinationLat || ride.destinationLat,
+          destinationLng: state?.destinationLng || ride.destinationLng,
         },
       });
     };

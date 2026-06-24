@@ -96,16 +96,17 @@ export default function LiveRide() {
     const onStarted = () => setRideStatus("STARTED");
 
     const onCompleted = (ride) => {
-      // Navigate to payment page after ride completes
+      // Prioritise state values (passed from vehicleSelection/searching)
+      // Backend ride-completed only has id, status — not fare/pickup in all cases
       navigate("/user/payment", {
         state: {
           ride: {
-            id: state?.rideId,
-            pickup: state?.pickup,
-            destination: state?.destination,
-            fare: state?.fare,
-            vehicleType: state?.vehicleType,
             ...ride,
+            id: state?.rideId || ride?.id,
+            pickup: state?.pickup || ride?.pickup,
+            destination: state?.destination || ride?.destination,
+            fare: state?.fare || ride?.fare,
+            vehicleType: state?.vehicleType || ride?.vehicleType,
           },
         },
       });

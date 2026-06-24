@@ -35,7 +35,7 @@ export default function CaptainLiveRide() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
-          socket.emit("captain-location", { rideId: ride?.id, lat, lng });
+          socket.emit("captain-location", { rideId: ride?.id, userId: ride?.userId, lat, lng });
           if (mapRef.current && selfMarkerRef.current) {
             selfMarkerRef.current.setLngLat([lng, lat]);
           }

@@ -1,6 +1,6 @@
 .landing {
   min-height: 100vh;
-  background: var(--black);
+  background: #0a0a0a;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -17,7 +17,7 @@
   font-size: 52px;
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--white);
+  color: #fafafa;
   display: block;
 }
 .landing__tagline {
@@ -48,8 +48,8 @@
 .landing__card:nth-child(2) { animation-delay: 0.07s; }
 
 .landing__card--user {
-  background: var(--accent);
-  color: var(--black);
+  background: #f5c518;
+  color: #0a0a0a;
 }
 .landing__card--captain {
   background: #161b22;

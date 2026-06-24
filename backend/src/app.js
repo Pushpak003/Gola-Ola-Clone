@@ -11,7 +11,13 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json());
+// Raw body needed for Razorpay webhook signature verification
+app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
+// All other routes use JSON
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payment/webhook') return next();
+  express.json()(req, res, next);
+});
 
 // Single CORS config — not duplicated
 app.use(

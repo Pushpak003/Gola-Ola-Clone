@@ -7,7 +7,7 @@ import { getRideHistory, getCaptainHistory } from "../controllers/ride.controlle
 import { getCurrentRide } from "../controllers/ride.controller.js";
 const router = express.Router();
 
-router.get("/fare", getFare);
+router.get("/fare", userAuth, getFare); // FIX: protect Mapbox quota
 router.post("/create", userAuth, createRide);
 router.post("/accept", captainAuth, acceptRide);
 router.post("/start", captainAuth, startRide);

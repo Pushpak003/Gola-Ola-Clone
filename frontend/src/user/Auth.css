@@ -11,6 +11,7 @@
 .auth__top {
   padding-top: 28px;
   padding-bottom: 16px;
+  background: inherit;
 }
 
 .auth__logo {
@@ -147,6 +148,7 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  background: inherit;
 }
 
 .auth__footer-text {
