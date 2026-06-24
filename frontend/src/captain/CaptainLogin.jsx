@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { captainAPI } from "../api/axios";
-import "../user/Auth.css";
 import "./Captain.css";
 
 export default function CaptainLogin() {
@@ -62,7 +61,7 @@ export default function CaptainLogin() {
   };
 
   return (
-    <div className="auth captain-login">
+    <div className="auth captain-login captain-login">
       <div className="auth__top">
         <div className="auth__logo">GOLA</div>
         <div className="captain-badge">Captain Portal</div>

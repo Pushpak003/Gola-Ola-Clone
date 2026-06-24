@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { captainAPI as api } from "../api/axios";
-import "../user/History.css";
+import "./Captain.css";
 
 const statusColor = { COMPLETED: "green", CANCELLED: "red", STARTED: "blue", ACCEPTED: "blue" };
 const statusLabel = { COMPLETED: "Completed", CANCELLED: "Cancelled", STARTED: "In Progress", ACCEPTED: "Accepted" };

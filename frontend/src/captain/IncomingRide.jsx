@@ -65,7 +65,7 @@ export default function IncomingRide() {
         {/* Meta */}
         <div className="incoming__meta">
           <div className="incoming__meta-item">
-            <div className="incoming__meta-val">₹{ride?.fare || "—"}</div>
+            <div className="incoming__meta-val">₹{ride?.fare ? Math.round(ride.fare) : "—"}</div>
             <div className="incoming__meta-key">Fare</div>
           </div>
           <div className="incoming__meta-item">
@@ -81,8 +81,8 @@ export default function IncomingRide() {
             </div>
           </div>
           <div className="incoming__meta-item">
-            <div className="incoming__meta-val">{ride?.otp || "—"}</div>
-            <div className="incoming__meta-key">OTP</div>
+            <div className="incoming__meta-val">{ride?.distance ? `${(ride.distance / 1000).toFixed(1)} km` : "—"}</div>
+            <div className="incoming__meta-key">Distance</div>
           </div>
         </div>
 

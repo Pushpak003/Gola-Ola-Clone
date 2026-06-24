@@ -20,6 +20,15 @@ export default function LiveRide() {
   const [rideStatus, setRideStatus] = useState("ACCEPTED");
   const [captainCoords, setCaptainCoords] = useState(null);
 
+  // Re-register user socket on every page mount — critical so backend can
+  // deliver ride-started / ride-completed even after React Router navigation
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    if (!socket.connected) socket.connect();
+    socket.emit("user-online", { token });
+  }, []);
+
   // Init map
   useEffect(() => {
     if (!mapContainerRef.current) return;

@@ -19,8 +19,24 @@ export default function VehicleSelection() {
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState("");
 
+  // Recover state from sessionStorage if React Router state is lost
+  // (happens on Strict Mode double-render or page refresh)
+  const locationState = state || (() => {
+    try {
+      const saved = sessionStorage.getItem("vsel_state");
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  })();
+
+  // Save state to sessionStorage whenever we have valid state
   useEffect(() => {
-    if (!state?.pickupLocation || !state?.destinationLocation) {
+    if (state?.pickupLocation && state?.destinationLocation) {
+      sessionStorage.setItem("vsel_state", JSON.stringify(state));
+    }
+  }, [state]);
+
+  useEffect(() => {
+    if (!locationState?.pickupLocation || !locationState?.destinationLocation) {
       navigate("/home");
       return;
     }
@@ -31,10 +47,10 @@ export default function VehicleSelection() {
     api
       .get("/ride/fare", {
         params: {
-          pickupLat: state.pickupLocation.lat,
-          pickupLng: state.pickupLocation.lng,
-          destinationLat: state.destinationLocation.lat,
-          destinationLng: state.destinationLocation.lng,
+          pickupLat: locationState.pickupLocation.lat,
+          pickupLng: locationState.pickupLocation.lng,
+          destinationLat: locationState.destinationLocation.lat,
+          destinationLng: locationState.destinationLocation.lng,
         },
       })
       .then(({ data }) => {
@@ -57,32 +73,33 @@ export default function VehicleSelection() {
           "Failed to fetch fares. Check your network and try again."
         );
       });
-  }, [state, navigate]);
+  }, []); // empty deps — run once on mount only, use locationState captured above
 
   const handleBook = async () => {
     if (!selected || !fares) return;
     setBooking(true);
     try {
       const { data } = await api.post("/ride/create", {
-        pickup:         state.pickupLocation.name,
-        destination:    state.destinationLocation.name,
-        pickupLat:      Number(state.pickupLocation.lat),
-        pickupLng:      Number(state.pickupLocation.lng),
-        destinationLat: Number(state.destinationLocation.lat),
-        destinationLng: Number(state.destinationLocation.lng),
+        pickup:         locationState.pickupLocation.name,
+        destination:    locationState.destinationLocation.name,
+        pickupLat:      Number(locationState.pickupLocation.lat),
+        pickupLng:      Number(locationState.pickupLocation.lng),
+        destinationLat: Number(locationState.destinationLocation.lat),
+        destinationLng: Number(locationState.destinationLocation.lng),
         vehicleType:    selected,
       });
 
       if (data?.success) {
+        sessionStorage.removeItem("vsel_state"); // clean up after booking
         navigate("/user/searching-ride", {
           state: {
             rideId:         data.ride.id,
-            pickup:         state.pickupLocation.name,
-            destination:    state.destinationLocation.name,
-            pickupLat:      state.pickupLocation.lat,
-            pickupLng:      state.pickupLocation.lng,
-            destinationLat: state.destinationLocation.lat,
-            destinationLng: state.destinationLocation.lng,
+            pickup:         locationState.pickupLocation.name,
+            destination:    locationState.destinationLocation.name,
+            pickupLat:      locationState.pickupLocation.lat,
+            pickupLng:      locationState.pickupLocation.lng,
+            destinationLat: locationState.destinationLocation.lat,
+            destinationLng: locationState.destinationLocation.lng,
             fare:           fares[selected],
             vehicleType:    selected,
             otp:            data.ride.otp,
@@ -101,9 +118,10 @@ export default function VehicleSelection() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (!error && !fares) {
     return (
-      <div className="vsel vsel--loading">
-        <div className="vsel__spin" />
-        <p>Calculating fares...</p>
+      <div style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#fafafa", gap: 16 }}>
+        <div style={{ width: 36, height: 36, border: "3px solid #e2e2e2", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+        <p style={{ fontSize: 14, color: "#6b6b6b" }}>Calculating fares...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -134,12 +152,12 @@ export default function VehicleSelection() {
       <div className="vsel__route">
         <div className="vsel__route-row">
           <span className="vsel__rdot vsel__rdot--g" />
-          <span className="vsel__rname">{state?.pickupLocation?.name}</span>
+          <span className="vsel__rname">{locationState?.pickupLocation?.name}</span>
         </div>
         <div className="vsel__rline" />
         <div className="vsel__route-row">
           <span className="vsel__rdot vsel__rdot--r" />
-          <span className="vsel__rname">{state?.destinationLocation?.name}</span>
+          <span className="vsel__rname">{locationState?.destinationLocation?.name}</span>
         </div>
       </div>
 

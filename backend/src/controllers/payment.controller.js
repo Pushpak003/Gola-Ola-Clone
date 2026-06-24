@@ -3,6 +3,7 @@ import {
   verifyPaymentService,
   handleWebhookService,
   getPaymentStatusService,
+  devCompletePaymentService,
 } from "../services/payment.service.js";
 
 export const createOrder = async (req, res) => {
@@ -25,6 +26,20 @@ export const verifyPayment = async (req, res) => {
       razorpaySignature,
       userId: req.user.id,
     });
+    res.status(200).json({ success: true, payment });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// DEV MODE ONLY: mark payment as paid without real Razorpay verification
+export const devCompletePayment = async (req, res) => {
+  try {
+    if (process.env.RAZORPAY_KEY_ID) {
+      return res.status(400).json({ success: false, message: "Dev mode only — Razorpay is configured, use real payment" });
+    }
+    const { rideId } = req.body;
+    const payment = await devCompletePaymentService({ rideId, userId: req.user.id });
     res.status(200).json({ success: true, payment });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });

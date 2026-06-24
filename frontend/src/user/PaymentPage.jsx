@@ -30,15 +30,7 @@ export default function PaymentPage() {
     setError("");
 
     try {
-      // 1. Load Razorpay script
-      const loaded = await loadRazorpay();
-      if (!loaded) {
-        setError("Payment SDK load failed. Check your internet connection.");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Create order on backend
+      // 1. Create order on backend first
       let order;
       try {
         const { data } = await userAPI.post("/payment/create-order", { rideId: ride.id });
@@ -51,7 +43,24 @@ export default function PaymentPage() {
         return;
       }
 
-      // 3. Open Razorpay checkout
+      // DEV MODE: Razorpay keys not configured — skip Razorpay entirely
+      if (order.devMode) {
+        try {
+          await userAPI.post("/payment/dev-complete", { rideId: ride.id });
+        } catch { /* ignore — dev mode */ }
+        navigate("/user/payment-success", {
+          state: { ride, paymentId: order.orderId },
+        });
+        return;
+      }
+
+      // 2. Load Razorpay script (only when we have a real order)
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        setError("Payment SDK load failed. Check your internet connection.");
+        setLoading(false);
+        return;
+      }
       // Note: DO NOT put setLoading(false) in finally — modal is async
       const options = {
         key: order.keyId,

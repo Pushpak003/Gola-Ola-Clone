@@ -7,6 +7,19 @@ export default function SearchingRide() {
   const { state } = useLocation();
   const navigate = useNavigate();
 
+  // Re-register user with socket in case this page was hit after navigation
+  // (socket stays connected but backend may have lost the userId→socketId mapping
+  // if the page was refreshed or socket reconnected)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    if (!socket.connected) {
+      socket.connect();
+    }
+    // Always re-emit so backend onlineUsers map has fresh socketId
+    socket.emit("user-online", { token });
+  }, []);
+
   useEffect(() => {
     // Backend emits ride-confirmed with full updatedRide object (no captain included)
     // We navigate to live-ride and pass otp from state (created at ride creation time)

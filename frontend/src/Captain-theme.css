@@ -87,7 +87,38 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; outline: none; bor
   display: inline-block;
 }
 
-/* ── Captain-specific global overrides ─────────────────────────── */
+/* Captain auth OTP input fix */
+.captain-login .auth__input--otp {
+  background: var(--cap-surface-2);
+  border-color: var(--cap-border);
+  color: var(--cap-text);
+}
+.captain-login .auth__input--otp:focus {
+  border-color: var(--cap-primary);
+}
+.captain-login .auth__input--otp::placeholder {
+  color: var(--cap-text-sub);
+}
+
+/* Captain login phone number field — text visible fix */
+.captain-login .auth__field {
+  background: var(--cap-surface-2);
+  border-color: var(--cap-border);
+}
+.captain-login .auth__field:focus-within {
+  border-color: var(--cap-primary);
+}
+.captain-login .auth__input {
+  color: var(--cap-text) !important;
+  background: transparent;
+}
+.captain-login .auth__input::placeholder {
+  color: var(--cap-text-sub) !important;
+}
+.captain-login .auth__prefix {
+  color: var(--cap-text-sub);
+  border-right-color: var(--cap-border);
+}
 .auth { background: var(--cap-bg); }
 .auth__body { background: var(--cap-surface); border: 1px solid var(--cap-border); }
 .auth__logo { color: var(--cap-primary); }
@@ -156,6 +187,12 @@ input, select, textarea { font-family: 'DM Sans', sans-serif; outline: none; bor
 .incoming__fare { color: var(--cap-primary); }
 .incoming__accept { background: var(--cap-primary); color: #000; }
 .incoming__decline { background: var(--cap-surface-2); border-color: var(--cap-border); color: var(--cap-text-sub); }
+.incoming__meta-item { background: var(--cap-surface-2) !important; }
+.incoming__meta-val { color: var(--cap-text) !important; }
+.incoming__meta-key { color: var(--cap-text-sub) !important; }
+.incoming__point-label { color: var(--cap-text-sub); }
+.incoming__point-name { color: var(--cap-text); }
+.incoming__headline { color: var(--cap-primary); }
 
 /* Captain live ride dark */
 .clive__sheet { background: var(--cap-surface); }

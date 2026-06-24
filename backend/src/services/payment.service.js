@@ -18,6 +18,7 @@ const getRazorpay = () => {
 /**
  * Create a Razorpay order for a completed ride.
  * Returns the order details that the frontend needs to open the Razorpay checkout.
+ * In dev mode (no Razorpay keys), returns a mock order so frontend can test flow.
  */
 export const createPaymentOrderService = async ({ rideId, userId }) => {
   const ride = await prisma.ride.findUnique({
@@ -29,6 +30,41 @@ export const createPaymentOrderService = async ({ rideId, userId }) => {
   if (ride.userId !== userId) throw new Error("Unauthorized");
   if (ride.status !== "COMPLETED") throw new Error("Ride is not completed yet");
 
+  // If already paid, don't create another order
+  if (ride.payment && ride.payment.status === "PAID") {
+    throw new Error("Ride is already paid");
+  }
+
+  // DEV MODE: If Razorpay keys are not configured, return a mock order
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    console.warn("⚠️  Razorpay keys not set — returning mock order for dev mode");
+    // Create/update payment record as PENDING with mock orderId
+    const mockOrderId = `dev_order_${rideId.slice(0, 8)}_${Date.now()}`;
+    await prisma.payment.upsert({
+      where: { rideId },
+      create: {
+        rideId,
+        amount: ride.fare,
+        currency: "INR",
+        method: "RAZORPAY",
+        status: "PENDING",
+        razorpayOrderId: mockOrderId,
+      },
+      update: {
+        status: "PENDING",
+        razorpayOrderId: mockOrderId,
+        failureReason: null,
+      },
+    });
+    return {
+      orderId: mockOrderId,
+      amount: Math.round(ride.fare * 100),
+      currency: "INR",
+      keyId: "rzp_test_dev_mock",
+      devMode: true,    // frontend uses this to skip Razorpay checkout
+    };
+  }
+
   // If a pending payment already exists, return it
   if (ride.payment && ride.payment.status === "PENDING" && ride.payment.razorpayOrderId) {
     return {
@@ -37,11 +73,6 @@ export const createPaymentOrderService = async ({ rideId, userId }) => {
       currency: "INR",
       keyId: process.env.RAZORPAY_KEY_ID,
     };
-  }
-
-  // If already paid, don't create another order
-  if (ride.payment && ride.payment.status === "PAID") {
-    throw new Error("Ride is already paid");
   }
 
   const razorpay = getRazorpay();
@@ -177,5 +208,49 @@ export const handleWebhookService = async ({ body, rawBody, signature }) => {
  */
 export const getPaymentStatusService = async ({ rideId }) => {
   const payment = await prisma.payment.findUnique({ where: { rideId } });
+  return payment;
+};
+/**
+ * DEV MODE ONLY: Mark payment as PAID without real Razorpay.
+ * Used when RAZORPAY_KEY_ID/SECRET are not set in .env.
+ */
+export const devCompletePaymentService = async ({ rideId, userId }) => {
+  const ride = await prisma.ride.findUnique({
+    where: { id: rideId },
+    include: { payment: true },
+  });
+
+  if (!ride) throw new Error("Ride not found");
+  if (ride.userId !== userId) throw new Error("Unauthorized");
+
+  const payment = await prisma.payment.upsert({
+    where: { rideId },
+    create: {
+      rideId,
+      amount: ride.fare,
+      currency: "INR",
+      method: "RAZORPAY",
+      status: "PAID",
+      razorpayOrderId: `dev_${rideId}`,
+      razorpayPaymentId: `dev_pay_${Date.now()}`,
+    },
+    update: {
+      status: "PAID",
+      razorpayPaymentId: `dev_pay_${Date.now()}`,
+    },
+  });
+
+  // Notify captain socket
+  if (ride.captainId) {
+    const captainSocketData = onlineDrivers.get(ride.captainId);
+    if (captainSocketData) {
+      getIo().to(captainSocketData.socketId).emit("payment-received", {
+        rideId,
+        amount: ride.fare,
+        paymentId: payment.razorpayPaymentId,
+      });
+    }
+  }
+
   return payment;
 };
