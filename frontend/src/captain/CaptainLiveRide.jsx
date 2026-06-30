@@ -4,6 +4,7 @@ import { socket } from "../sockets/socket.js";
 import { captainAPI as api } from "../api/axios";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "../user/Ride.css";
 import "./Captain.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { captainAPI } from "../api/axios";
+import "../user/Auth.css";
 import "./Captain.css";
 
 export default function CaptainLogin() {

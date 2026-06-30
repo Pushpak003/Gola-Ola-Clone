@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&display=swap');
 
 /* ── Captain App Theme — Dark teal/green, professional driver UI ── */
 :root {
@@ -16,6 +16,14 @@
   --cap-text: #e6edf3;
   --cap-text-sub: #8b949e;
   --cap-accent: #f78166;        /* warm coral for alerts */
+
+  /* Aliases so shared CSS (Auth.css, History.css etc.) works in captain app */
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --surface-2: #21262d;
+  --border:    #30363d;
+  --text:      #e6edf3;
+  --text-sub:  #8b949e;
 
   --gray-50:  #161b22;
   --gray-100: #21262d;
@@ -50,7 +58,7 @@
 html { height: 100%; }
 body {
   height: 100%;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Nunito', sans-serif;
   background: var(--cap-bg);
   color: var(--cap-text);
   font-size: 15px;
@@ -58,6 +66,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 #root { height: 100%; }
+h1, h2, h3, h4, h5 { font-family: 'Fredoka One', cursive; font-weight: 400; letter-spacing: 0.01em; }
+button { font-family: 'Nunito', sans-serif; cursor: pointer; border: none; outline: none; transition: all 0.18s ease; }
+button:active { transform: scale(0.97); }
+input, select, textarea { font-family: 'Nunito', sans-serif; outline: none; border: none; }
 
 h1,h2,h3,h4,h5 { font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
 button { font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; outline: none; transition: all 0.18s ease; }

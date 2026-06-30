@@ -78,11 +78,14 @@ export default function Home() {
     const map = mapRef.current;
 
     const cleanupLayers = () => {
-      // Remove layers BEFORE source (order matters in Mapbox GL)
-      ["home-route-casing", "home-route"].forEach((id) => {
-        if (map.getLayer(id)) map.removeLayer(id);
-      });
-      if (map.getSource("home-route")) map.removeSource("home-route");
+      // Guard: map may have been removed on unmount
+      if (!map || !map.getCanvas) return;
+      try {
+        ["home-route-casing", "home-route"].forEach((id) => {
+          if (map.getLayer(id)) map.removeLayer(id);
+        });
+        if (map.getSource("home-route")) map.removeSource("home-route");
+      } catch { /* map already destroyed */ }
     };
 
     const drawRoute = () => {
